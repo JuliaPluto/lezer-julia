@@ -84,11 +84,11 @@ y = v"1.0"
 SourceFile(
   AssignmentExpression(
     Identifier,
-    PrefixedString(Identifier,String)
+    PrefixedString(Identifier,RawString)
   ),
   AssignmentExpression(
     Identifier,
-    PrefixedString(Identifier,String),
+    PrefixedString(Identifier,RawString),
   ),
 )
 
