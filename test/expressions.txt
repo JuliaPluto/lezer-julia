@@ -78,6 +78,7 @@ SourceFile(
 
 x = r"foo"
 y = v"1.0"
+z = v"hello $(world)"
 
 ==>
 
@@ -85,6 +86,10 @@ SourceFile(
   AssignmentExpression(
     Identifier,
     PrefixedString(Identifier,RawString)
+  ),
+  AssignmentExpression(
+    Identifier,
+    PrefixedString(Identifier,RawString),
   ),
   AssignmentExpression(
     Identifier,
