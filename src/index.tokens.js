@@ -229,7 +229,7 @@ const isStringInterpolation = (input, offset) => {
   );
 };
 
-const makeStringContent = ({ till, term }) => {
+const makeStringContent = ({ till, term, raw=true }) => {
   return new ExternalTokenizer((input, stack) => {
     let offset = 0;
     let eatNext = false;
@@ -240,7 +240,7 @@ const makeStringContent = ({ till, term }) => {
         eatNext = true;
       } else if (eatNext) {
         eatNext = false;
-      } else if (isStringInterpolation(input, offset) || till(input, offset)) {
+      } else if (raw && (isStringInterpolation(input, offset) || till(input, offset))) {
         if (offset > 0) {
           input.acceptToken(term, offset);
         }
@@ -278,6 +278,22 @@ export const stringContent = makeStringContent({
 export const commandStringContent = makeStringContent({
   term: terms.commandStringContent,
   till: isBackquote,
+});
+
+export const rawTripleStringContent = makeStringContent({
+  term: terms.tripleStringContent,
+  till: isTripleQuote,
+  raw: true,
+});
+export const rawStringContent = makeStringContent({
+  term: terms.stringContent,
+  till: isQuote,
+  raw: true,
+});
+export const rawCommandStringContent = makeStringContent({
+  term: terms.commandStringContent,
+  till: isBackquote,
+  raw: true,
 });
 
 // BLOCK COMMENT

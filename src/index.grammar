@@ -593,19 +593,19 @@ RangeExpression<e> {
     '"' (stringContent | stringInterpolation)* '"'
   }
   RawString {
-    '"' (stringContent)* '"'
+    '"' (rawStringContent)* '"'
   }
   TripleString {
     '"""' (tripleStringContent | stringInterpolation)* '"""'
   }
   RawTripleString {
-    '"""' (tripleStringContent)* '"""'
+    '"""' (rawTripleStringContent)* '"""'
   }
   CommandString {
     "`" (commandStringContent | stringInterpolation)* "`"
   }
   RawCommandString {
-    "`" (commandStringContent)* "`"
+    "`" (rawCommandStringContent)* "`"
   }
 }
 
