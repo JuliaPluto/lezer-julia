@@ -294,8 +294,11 @@ pe {
   Number |
   Symbol |
   String |
+  RawString |
   TripleString |
+  RawTripleString |
   CommandString |
+  RawCommandString |
   PrefixedString |
   ParenthesizedExpression<e> |
   TupleExpression<e, pe> |
@@ -369,8 +372,11 @@ s_pe {
   Number |
   Symbol |
   String |
+  RawString |
   TripleString |
+  RawTripleString |
   CommandString |
+  RawCommandString |
   PrefixedString |
   ParenthesizedExpression<s_e> |
   TupleExpression<s_e, s_pe> |
@@ -586,11 +592,20 @@ RangeExpression<e> {
   String {
     '"' (stringContent | stringInterpolation)* '"'
   }
+  RawString {
+    '"' (stringContent)* '"'
+  }
   TripleString {
     '"""' (tripleStringContent | stringInterpolation)* '"""'
   }
+  RawTripleString {
+    '"""' (tripleStringContent)* '"""'
+  }
   CommandString {
     "`" (commandStringContent | stringInterpolation)* "`"
+  }
+  RawCommandString {
+    "`" (commandStringContent)* "`"
   }
 }
 
@@ -600,9 +615,9 @@ stringInterpolation {
 }
 
 PrefixedString {
-  Identifier !immediate immediateDoubleQuote String |
-  Identifier !immediate immediateDoubleQuote TripleString |
-  Identifier !immediate immediateBackquote CommandString
+  Identifier !immediate immediateDoubleQuote RawString |
+  Identifier !immediate immediateDoubleQuote RawTripleString |
+  Identifier !immediate immediateBackquote RawCommandString
 }
 
 plusOperator {
