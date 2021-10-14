@@ -294,11 +294,8 @@ pe {
   Number |
   Symbol |
   String |
-  RawString |
   TripleString |
-  RawTripleString |
   CommandString |
-  RawCommandString |
   PrefixedString |
   ParenthesizedExpression<e> |
   TupleExpression<e, pe> |
@@ -372,11 +369,8 @@ s_pe {
   Number |
   Symbol |
   String |
-  RawString |
   TripleString |
-  RawTripleString |
   CommandString |
-  RawCommandString |
   PrefixedString |
   ParenthesizedExpression<s_e> |
   TupleExpression<s_e, s_pe> |
