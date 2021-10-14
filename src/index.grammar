@@ -633,6 +633,9 @@ kw<term> { @specialize[@name={term},group="keyword"]<Identifier, term> }
 @external tokens BlockComment from "./index.tokens.js" { BlockComment }
 @external tokens tripleStringContent from "./index.tokens.js" { tripleStringContent }
 @external tokens stringContent from "./index.tokens.js" { stringContent }
+@external tokens rawStringContent from "./index.tokens.js" { rawStringContent }
+@external tokens rawTripleStringContent from "./index.tokens.js" { rawTripleStringContent }
+@external tokens rawCommandStringContent from "./index.tokens.js" { rawCommandStringContent }
 @external tokens commandStringContent from "./index.tokens.js" { commandStringContent }
 @external tokens layoutExtra from "./index.tokens.js" {
   immediateParen,
