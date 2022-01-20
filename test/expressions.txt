@@ -83,12 +83,25 @@ y = v"1.0"
 
 SourceFile(
   AssignmentExpression(
+<<<<<<< Updated upstream
     Identifier,
     PrefixedString(Identifier,String)
   ),
   AssignmentExpression(
     Identifier,
     PrefixedString(Identifier,String),
+=======
+    Definition(Identifier),
+    PrefixedString(Prefix(Identifier),StringWithoutInterpolation)
+  ),
+  AssignmentExpression(
+    Definition(Identifier),
+    PrefixedString(Prefix(Identifier),StringWithoutInterpolation),
+  ),
+  AssignmentExpression(
+    Definition(Identifier),
+    PrefixedString(Prefix(Identifier),StringWithoutInterpolation),
+>>>>>>> Stashed changes
   ),
 )
 
@@ -113,15 +126,15 @@ a, b = c, d, e
 
 SourceFile(
   AssignmentExpression(
-    Identifier,
+    Definition(Identifier),
     Identifier,
   ),
   AssignmentExpression(
-    Identifier,
-    AssignmentExpression(Identifier,Identifier),
+    Definition(Identifier),
+    AssignmentExpression(Definition(Identifier),Identifier),
   ),
   AssignmentExpression(
-    BareTupleExpression(Identifier,Identifier),
+    Definition(BareTupleExpression(Identifier,Identifier)),
     BareTupleExpression(Identifier,Identifier,Identifier)
   )
 )
@@ -263,7 +276,7 @@ SourceFile(
       String,
       CompoundExpression(
         begin,
-        AssignmentExpression(Identifier,Identifier),
+        AssignmentExpression(Definition(Identifier),Identifier),
         end)
       )
     )
@@ -333,7 +346,7 @@ x = batch_size == 1 ?
 
 SourceFile(
   AssignmentExpression(
-    Identifier,
+    Definition(Identifier),
     TernaryExpression(
       BinaryExpression(Identifier,Number),
       CallExpression(Identifier,ArgumentList(Number)),
@@ -351,7 +364,7 @@ foo(^, ÷)
 ==>
 
 SourceFile(
-  AssignmentExpression(Identifier,Operator),
+  AssignmentExpression(Definition(Identifier),Operator),
   CallExpression(Identifier,ArgumentList(Operator)),
   CallExpression(Identifier,ArgumentList(Operator,Operator))
 )
@@ -460,7 +473,7 @@ SourceFile(
 
 SourceFile(
   ParenthesizedExpression(
-    AssignmentExpression(Identifier,Number)
+    AssignmentExpression(Definition(Identifier),Number)
   ),
   TupleExpression(
     NamedField(Identifier,Number)
@@ -544,7 +557,7 @@ SourceFile(
     ArgumentList,
     ParenthesizedExpression(
       CallExpression(Identifier,ArgumentList(Number)),
-      AssignmentExpression(Identifier,Number),
+      AssignmentExpression(Definition(Identifier),Number),
       Identifier
     )
   )

@@ -414,7 +414,7 @@ name = "hello"
 ==>
 
 SourceFile(
-  AssignmentExpression(Identifier,String),
+  AssignmentExpression(Definition(Identifier),String),
 )
 
 # FunctionAssignmentExpression_ok
@@ -425,7 +425,7 @@ name(a, b) = a + b
 
 SourceFile(
   FunctionAssignmentExpression(
-    Identifier,
+    Definition(Identifier),
     ArgumentList(Identifier,Identifier),
     BinaryExpression(Identifier,Identifier)
   )
@@ -439,9 +439,15 @@ name(a::T) where {T} = a
 
 SourceFile(
   FunctionAssignmentExpression(
+<<<<<<< Updated upstream
     Identifier,
     ArgumentList(TypedExpression(Identifier,Identifier)),
     where,TypeArgumentList(Identifier),
+=======
+    Definition(Identifier),
+    ArgumentList(TypedExpression(Identifier,Type(Identifier))),
+    where,TypeParameters(TypeArgumentList(Identifier)),
+>>>>>>> Stashed changes
     Identifier
   )
 )
@@ -622,8 +628,13 @@ SourceFile(
 
 SourceFile(
   MacroExpression(
+<<<<<<< Updated upstream
     MacroIdentifier(Identifier),
     MacroArgumentList(AssignmentExpression(Identifier,Number))
+=======
+    MacroIdentifier(MacroName),
+    MacroArgumentList(AssignmentExpression(Definition(Identifier),Number))
+>>>>>>> Stashed changes
   )
 )
 
@@ -641,7 +652,7 @@ SourceFile(ParenthesizedExpression(Number))
 
 ==>
 
-SourceFile(ParenthesizedExpression(AssignmentExpression(Identifier,Number)))
+SourceFile(ParenthesizedExpression(AssignmentExpression(Definition(Identifier),Number)))
 
 # Tuple_empty_ok
 

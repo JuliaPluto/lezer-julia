@@ -1,0 +1,338 @@
+# Struct with type and default
+Base.@kwdef struct X
+  x::Int = 10
+end
+==>
+SourceFile(MacroExpression(MacroFieldExpression(Identifier,MacroIdentifier(MacroName)),MacroArgumentList(StructDefinition(struct,Definition(Identifier),AssignmentExpression(TypedExpression(Identifier,"::",Type(Identifier)),Number),end))))
+
+
+# Macro in export
+export @macroname
+export somename, @andamacroname, andsomethingelse
+==>
+SourceFile(
+  ExportStatement(export,MacroIdentifier(MacroName)),
+  ExportStatement(export,Identifier,MacroIdentifier(MacroName),Identifier),
+)
+
+
+# Return with assignment
+return x = 10
+==>
+SourceFile(ReturnStatement(return,AssignmentExpression(Definition(Identifier),Number)))
+
+
+# Function with return type
+function f()::Int
+end
+==>
+SourceFile(FunctionDefinition(function,Definition(Identifier),ArgumentList,ReturnType(Type(Identifier)),end))
+
+
+# Function with where T
+function f()::T where T
+end
+==>
+SourceFile(
+  FunctionDefinition(
+    function,
+    Definition(Identifier),
+    ArgumentList,
+    ReturnType("::",Type(Identifier)),
+    where,
+    TypeParameters(Identifier),
+    end
+  )
+)
+
+# number with tuple coeffecient
+
+1(x, y)
+
+==>
+
+SourceFile(CoefficientExpression(Number,Coefficient(TupleExpression(Identifier,Identifier))))
+
+
+# FieldExpression in PrefixedString
+module.macro"aaa"
+==>
+SourceFile()
+
+
+# FieldExpression in Coefficient
+10x.a
+==>
+SourceFile(CoefficientExpression(Number,Coefficient(FieldExpression(Identifier,FieldName))))
+
+
+# Interpolation in hcat
+:([x $y])
+==> 
+SourceFile(
+  QuoteExpression(ParenthesizedExpression(
+    MatrixExpression(MatrixRow(
+      Identifier,
+      InterpolationExpression(Identifier),
+    )),
+  )),
+)
+
+
+# Let statements without declarations
+
+let
+    code
+end
+
+==>
+
+SourceFile(
+  LetStatement(let,
+    Identifier,
+    end
+  )
+)
+
+
+# Escaped backslash
+
+"\\" # i am a comment "
+
+==>
+
+SourceFile(String, Comment)
+
+
+# Prefixed strings
+
+md"$(x)"
+
+==>
+
+SourceFile(
+  PrefixedString(Prefix(Identifier),StringWithoutInterpolation),
+)
+
+
+# Macro with @ at the beginning
+
+@Test.test 1 == 1
+
+==>
+
+SourceFile(
+  MacroExpression(
+    MacroFieldExpression(MacroIdentifier(MacroName),MacroFieldName),
+    MacroArgumentList(BinaryExpression(Number,Number))
+  )
+)
+
+
+# Symbol with operator
+
+:if
+
+==>
+
+SourceFile(Symbol(SymbolName))
+
+
+# Keyword as fieldname
+
+object.if
+
+==>
+
+SourceFile(FieldExpression(Identifier,FieldName))
+
+
+# Multiple assignments
+
+const x = a, b
+
+==>
+
+SourceFile(
+  ConstStatement(
+    const,
+    AssignmentExpression(
+      Definition(Identifier),
+      BareTupleExpression(Identifier,Identifier)
+    ),
+  ),
+)
+
+
+# Generator in sum
+
+sum(x for x in g)
+
+==>
+
+SourceFile(
+  CallExpression(
+    Identifier,
+    ArgumentList(
+      ListCompherension(Identifier,ForClause(for,ForBinding(Identifier,in,Identifier))),
+    ),
+  ),
+)
+
+
+# Multiple bindings in sum
+
+sum(x for x in g, y in z)
+sum(c for c in d, e = 5)
+
+==>
+
+SourceFile(
+  CallExpression(
+    Identifier,
+    ArgumentList(
+      ListCompherension(
+        Identifier,
+        ForClause(
+          for,
+          ForBinding(Identifier,in,Identifier),
+          ForBinding(Identifier,in,Identifier),
+        ),
+      ),
+    ),
+  ),
+  CallExpression(
+    Identifier,
+    ArgumentList(
+      ListCompherension(
+        Identifier,
+        ForClause(
+          for,
+          ForBinding(Identifier,in,Identifier),
+          ForBinding(Identifier,Number),
+        ),
+      ),
+    ),
+  ),
+)
+
+# Transpose
+
+A'B:C'D
+
+==>
+
+SourceFile(
+  RangeExpression(
+    TransposeExpression(Identifier,Identifier),
+    TransposeExpression(Identifier,Identifier),
+  ),
+)
+
+
+# IDK
+
+begin
+	function under_root(x)
+		ret = 2exp(+x+2) + 1
+	end
+end
+
+==>
+
+SourceFile(
+  CompoundExpression(
+    begin,
+    FunctionDefinition(
+      function,
+      Definition(Identifier),
+      ArgumentList(Identifier),
+      AssignmentExpression(
+        Definition(Identifier),
+        BinaryExpression(
+          CoefficientExpression(
+            Number,
+            Coefficient(
+              CallExpression(
+                Identifier,
+                ArgumentList(BinaryExpression(UnaryExpression(Identifier),Number)),
+              ),
+            ),
+          ),
+          Number,
+        ),
+      ),
+      end
+    ),
+    end,
+  )
+)
+
+# IDK2
+
+2xxx()
+
+==>
+
+SourceFile(
+  CoefficientExpression(
+    Number,
+    Coefficient(
+      CallExpression(Identifier,ArgumentList),
+    ),
+  ),
+)
+
+
+# Macro do call
+@test() do x, y
+
+end
+
+==>
+
+SourceFile(
+  MacroExpression(
+    MacroIdentifier(MacroName),
+    ArgumentList,
+    DoClause(
+      do,
+      DoClauseArguments(BareTupleExpression(Identifier,Identifier)),
+      end
+    ),
+  )
+)
+
+
+# Proper terminator
+
+if true end
+if true
+end
+if true x end
+if true x else end
+if true x else y end
+
+==>
+
+SourceFile(
+  IfStatement(IfClause(if,BooleanLiteral()),end),
+  IfStatement(IfClause(if,BooleanLiteral()),end),
+  IfStatement(IfClause(if,BooleanLiteral()),Identifier,end),
+  IfStatement(IfClause(if,BooleanLiteral()),Identifier,ElseClause(else),end),
+  IfStatement(IfClause(if,BooleanLiteral()),Identifier,ElseClause(else,Identifier),end),
+)
+
+# Boolean
+
+true
+false
+
+==>
+
+SourceFile(
+  BooleanLiteral,
+  BooleanLiteral,
+)
+
+

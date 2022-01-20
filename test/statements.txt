@@ -154,10 +154,20 @@ const x, y = 5
 ==>
 
 SourceFile(
+<<<<<<< Updated upstream
   ConstStatement(const,
     VariableDeclaration(Identifier),
     VariableDeclaration(Identifier,Number)
   )
+=======
+  ConstStatement(
+    const,
+    AssignmentExpression(
+      Definition(BareTupleExpression(Identifier,Identifier)),
+      Number,
+    ),
+  ),
+>>>>>>> Stashed changes
 )
 
 # Quote statements
@@ -172,8 +182,8 @@ end
 
 SourceFile(
   QuoteStatement(quote,
-    AssignmentExpression(Identifier,Number),
-    AssignmentExpression(Identifier,Number),
+    AssignmentExpression(Definition(Identifier),Number),
+    AssignmentExpression(Definition(Identifier),Number),
     BinaryExpression(Identifier,Identifier),
     end
   )
@@ -308,7 +318,7 @@ SourceFile(
   Comment,
   BlockComment,
   BlockComment,
-  AssignmentExpression(Identifier,BlockComment,Number),
+  AssignmentExpression(Definition(Identifier),BlockComment,Number),
   BlockComment,
   BlockComment,
 )

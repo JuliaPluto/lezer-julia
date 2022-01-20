@@ -22,12 +22,18 @@
   ternary @right
   pair @right
   assign @right
+<<<<<<< Updated upstream
+=======
+  assignexpression
+  macroargument
+  macrocall @right
+>>>>>>> Stashed changes
   regular1
   right0 @right
   regular0
-  regular-1
-  right-2 @right
-  regular-2
+  matrix
+  return @right
+  quote @right
 }
 
 @top SourceFile {
@@ -39,24 +45,34 @@
 // TOP LEVEL
 
 expressionList<e, pe> {
+<<<<<<< Updated upstream
   (e ~id | BareTupleExpression<e> | AssignmentExpression<e> | FunctionAssignmentExpression)
   (!regular0 terminator
     (!regular0 e | BareTupleExpression<e> | AssignmentExpression<e> | FunctionAssignmentExpression))*
   terminator?
+=======
+  !right0
+  terminator* ~possibly_more_expressions
+  !right0 
+  (e ~id | BareTupleExpression<e> | AssignmentExpression<e, pe> | FunctionAssignmentExpression)?
+  (!right0 terminator+ ~possibly_more_expressions
+    (!right0 e ~id | BareTupleExpression<e> | AssignmentExpression<e, pe> | FunctionAssignmentExpression))*
+  terminator* ~possibly_more_expressions
+>>>>>>> Stashed changes
 }
 
 BareTupleExpression<e> {
   e (!regular-1 "," e)+
 }
 
-AssignmentExpression<e> {
-  ((e | BareTupleExpression<e>)
+AssignmentExpression[@dynamicPrecedence=1]<e, pe> {
+  !assignexpression (Definition[@dynamicPrecedence=2] { Identifier | TypedExpression<pe> | InterpolationExpression<pe> } ~variabledeclaration ~id | e ~id | Definition { BareTupleExpression<e> })
   !assign (assignOperator | "=")
-  (e | AssignmentExpression<e> | BareTupleExpression<e>))
+  (e | AssignmentExpression<e, pe> | BareTupleExpression<e>)
 }
 
 simpleAssignmentExpression<e> {
-  e ~id !assign (assignOperator | "=") !assign e
+  Definition { e ~id } !assign (assignOperator | "=") !assign e
 }
 
 simpleExpressionList<e> {
@@ -67,10 +83,10 @@ simpleExpressionList<e> {
 }
 
 FunctionAssignmentExpression[@dynamicPrecedence=2] {
-  Identifier ~id immediateParen !call ArgumentList<e, pe> ~id
-  (kw<"where"> TypeArgumentList<e>)?
+  Definition { Identifier ~id } immediateParen !call ArgumentList<e, pe> ~id
+  (kw<"where"> TypeParameters { Identifier | TypeArgumentList<e> } )?
   !assign (assignOperator | "=")
-  !assign (e | AssignmentExpression<e>)
+  !assign (e | AssignmentExpression<e, pe>)
 }
 
 // STATEMENTS
@@ -147,7 +163,7 @@ ContinueStatement {
 }
 
 ReturnStatement {
-  kw<"return"> (!right-2 (e | BareTupleExpression<e>))?
+  kw<"return"> (!return (e | BareTupleExpression<e> | AssignmentExpression<e, pe>))?
 }
 
 LetStatement[closedBy="end"] {
@@ -155,6 +171,7 @@ LetStatement[closedBy="end"] {
 }
 
 ConstStatement {
+<<<<<<< Updated upstream
   kw<"const"> (VariableDeclaration (!right0 "," VariableDeclaration)*)
 }
 
@@ -164,6 +181,25 @@ GlobalStatement {
 
 LocalStatement {
   kw<"local"> (VariableDeclaration (!right0 "," VariableDeclaration)*)
+=======
+  kw<"const"> AssignmentExpression<e, pe>
+}
+
+GlobalStatement {
+  kw<"global"> (
+    global_assignment[@dynamicPrecedence=10] { AssignmentExpression<e, pe> } |
+    Identifier ~variabledeclaration |
+    InterpolationExpression<pe> ~variabledeclaration
+  )
+}
+
+LocalStatement {
+  kw<"local"> (
+    global_assignment[@dynamicPrecedence=10] { AssignmentExpression<e, pe> } |
+    Identifier ~variabledeclaration |
+    InterpolationExpression<pe> ~variabledeclaration
+  )
+>>>>>>> Stashed changes
 }
 
 VariableDeclaration {
@@ -171,7 +207,13 @@ VariableDeclaration {
 }
 
 QuoteStatement[closedBy="end"] {
+<<<<<<< Updated upstream
   kw<"quote"> expressionList<e, pe>? end
+=======
+  kw<"quote"> !quote
+    expressionList<e, pe>
+  end
+>>>>>>> Stashed changes
 }
 
 ImportStatement {
@@ -338,11 +380,11 @@ SubscriptExpression[closedBy="]"]<pe> {
       GeneratorExpression { s_e comprehensionClause<s_e, s_pe> } |
       (s_e |
        AssignmentExpression {
-         s_e !assign (assignOperator | "=") s_e
+         Definition { s_e } !assign (assignOperator | "=") s_e
        })
       ("," (s_e |
             AssignmentExpression {
-              s_e !assign (assignOperator | "=") s_e
+              Definition { s_e } !assign (assignOperator | "=") s_e
             }))*
     )?
     ","?
@@ -492,18 +534,26 @@ verboseFunctionExpression {
 }
 
 FunctionExpression<e, pe> {
-  (Identifier ~id | ArgumentList<e, pe>) !arrow "->" (e | AssignmentExpression<e>)
+  (Identifier ~id | ArgumentList<e, pe>) !arrow "->" (e | AssignmentExpression<e, pe>)
 }
 
 MacroExpression<e, pe> {
+<<<<<<< Updated upstream
   (MacroIdentifier | MacroFieldExpression<pe>) (!right0
     immediateParen args[@dynamicPrecedence=1] { ArgumentList<e, pe> }
     | MacroArgumentList<e>
+=======
+  (MacroIdentifier | MacroFieldExpression<pe>)
+  !macrocall
+  (
+    immediateParen args[@dynamicPrecedence=1] { ArgumentList<e, pe> } DoClause? |
+    MacroArgumentList<e, pe>
+>>>>>>> Stashed changes
   )?
 }
 
-MacroArgumentList<e> {
-  (!regular-2 (e | AssignmentExpression<e>))+
+MacroArgumentList<e, pe> {
+  (!macroargument (e | AssignmentExpression<e, pe>))+
 }
 
 BinaryExpression<e> {
@@ -547,14 +597,14 @@ ArrayExpression[closedBy="]"]<e> {
 
 MatrixExpression[closedBy="]"]<e> {
   "["
-    !regular-1 MatrixRow<e>
+    !matrix MatrixRow<e>
     (";" MatrixRow<e>)* 
-    (!regular-1 ";")?
-    !regular-1 "]"
+    (!matrix ";")?
+    !matrix "]"
 }
 
 MatrixRow<e> {
-  (!regular-1 e)+
+  (!matrix e)+
 }
 
 ArrayComprehensionExpression[closedBy="]"]<e, pe> {
