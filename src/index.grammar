@@ -239,7 +239,7 @@ FunctionDefinition[closedBy="end"] {
       !call immediateParen
       !call args[@dynamicPrecedence=1] { ArgumentList<e, pe> }
     } |
-    [@dynamicPrecedence=10] { ArgumentList<e, pe> } |
+    ArgumentList<e, pe> |
     Identifier ~id
   }
   (kw<"where"> TypeParameters { Identifier | TypeArgumentList<e> } )?
