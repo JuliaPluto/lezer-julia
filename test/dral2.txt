@@ -102,18 +102,17 @@ a'
 ==>
 SourceFile(TransposeExpression(Identifier))
 
-+
-# Lonely baretuple
+# BROKEN Lonely baretuple
 a, = a
 ==>
 SourceFile()
 
-# subscript assignment
+# BROKEN subscript assignment
 Z[x = y = 10]
 ==>
 SourceFile()
 
-# Yessss
+# BROKEN Yessss
 primitive = 10
 ==>
 SourceFile(AssignmentExpression(Assignee(Identifier),Number))

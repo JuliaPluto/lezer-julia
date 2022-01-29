@@ -82,3 +82,8 @@ SourceFile(Call(Identifier,Tuple(Parameters(Identifier))))
 (;a)
 ==>
 SourceFile(Tuple(Parameters(Identifier)))
+
+# Function with inline-block arguments
+function (a;a)
+==>
+SourceFile(function,InlineBlock(Identifier,Identifier))

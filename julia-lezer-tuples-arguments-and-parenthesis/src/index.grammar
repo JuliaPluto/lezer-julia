@@ -4,7 +4,7 @@
 @top SourceFile { expression }
 
 expression {
-  kw<"function"> (Call | ArgumentList) |
+  kw<"function"> (Call | Tuple | InlineBlock) |
   primary-expression
 }
 
@@ -28,22 +28,19 @@ InlineBlock {
 
 ArgumentList[@name=Tuple] {
   "("
-  (tuple-section? ~args_or_tuple Parameters*)?
+  (tuple-section? Parameters*)?
   ")"
 }
 
 Tuple {
   "("
-  (tuple-section-with-comma? ~args_or_tuple Parameters*)?
+  (expression "," tuple-section?)?
+  Parameters*
   ")"
 }
 
 Parameters {
   ";" tuple-section?
-}
-tuple-section-with-comma {
-    expression "," |
-    expression ("," expression)+ ","?
 }
 tuple-section {
     expression ~inline-block-or-tuple ("," expression)* ","?
