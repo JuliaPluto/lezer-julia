@@ -508,7 +508,7 @@ InterpolationExpression[@dynamicPrecedence=2] {
   "$" !interp (nowhitespace | immediateParen) pe
 }
 
-Symbol[@dynamicPrecedence=10] {
+Symbol {
   ":" !interp (nowhitespace | immediateParen) SymbolName { word }
 }
 
