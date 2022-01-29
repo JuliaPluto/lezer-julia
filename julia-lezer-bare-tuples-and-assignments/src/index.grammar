@@ -1,0 +1,60 @@
+@precedence {
+}
+
+@top SourceFile { code-block }
+
+terminator { ";" }
+
+code-block {
+  terminator*
+  statement
+  (
+    terminator+
+    statement
+  )*
+  terminator*
+}
+
+statement {
+  expression |
+  AssignmentExpression<expression | BareTupleExpression<expression>> |
+  BareTupleExpression<expression>
+}
+
+expression {
+  Identifier
+}
+
+BareTupleExpression<e> {
+  e "," |
+  e ("," e)+
+}
+
+AssignmentExpression<e> {
+  Assignee { e }
+  "="
+  (AssignmentExpression<e> | e)
+}
+
+Identifier { identifier }
+kw<term> { @specialize[@name={term},group="keyword"]<identifier, term> }
+
+@skip { whitespace | Comment }
+
+@tokens {
+  identifierChar { std.asciiLetter | $[_$\u{a1}-\u{10ffff}] }
+
+  word { identifierChar (identifierChar | std.digit)* }
+
+  identifier { word }
+
+
+  whitespace {
+    " " | "\t" | "\n"
+  }
+  Comment {
+    "#" ![\n]*
+  }
+  @precedence {
+  }
+}

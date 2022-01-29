@@ -101,3 +101,19 @@ SourceFile(BinaryExpression(BinaryExpression(TransposeExpression(Identifier),Ide
 a'
 ==>
 SourceFile(TransposeExpression(Identifier))
+
++
+# Lonely baretuple
+a, = a
+==>
+SourceFile()
+
+# subscript assignment
+Z[x = y = 10]
+==>
+SourceFile()
+
+# Yessss
+primitive = 10
+==>
+SourceFile(AssignmentExpression(Assignee(Identifier),Number))

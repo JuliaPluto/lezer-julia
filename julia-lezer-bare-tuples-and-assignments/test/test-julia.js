@@ -1,4 +1,4 @@
-import { parser } from "../src/index.js";
+import { parser } from "../src/index.js"
 import { fileTests } from "@lezer/generator/dist/test";
 
 import * as fs from "fs";
@@ -15,12 +15,7 @@ for (let file of fs.readdirSync(caseDir)) {
     for (let { name, run } of fileTests(
       fs.readFileSync(path.join(caseDir, file), "utf8"),
       file
-    )) {
-      if (name.startsWith("BROKEN")) {
-        it.skip(name, () => run(parser));
-      } else {
-        it(name, () => run(parser));
-      }
-    }
+    ))
+      it(name, () => run(parser));
   });
 }

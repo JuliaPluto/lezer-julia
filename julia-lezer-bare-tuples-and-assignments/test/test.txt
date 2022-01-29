@@ -1,0 +1,22 @@
+# Loose bare tuple
+x, y, z
+==>
+SourceFile(BareTupleExpression(Identifier,Identifier,Identifier))
+
+
+# Bare tuple assigment
+x, y = a, b
+==>
+SourceFile(AssignmentExpression(
+  Assignee(BareTupleExpression(Identifier,Identifier)),
+  BareTupleExpression(Identifier,Identifier)
+))
+
+
+# Lonely bare tuple
+x, = a, b
+==>
+SourceFile(AssignmentExpression(
+  Assignee(BareTupleExpression(Identifier)),
+  BareTupleExpression(Identifier,Identifier))
+)
