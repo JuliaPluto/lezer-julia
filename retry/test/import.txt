@@ -1,0 +1,19 @@
+# Tuples
+
+(
+  ();
+  (a);
+  (a,);
+  (a,b,c,);
+  (a,b,c);
+)
+
+==>
+
+SourceFile(InlineBlock(
+  Tuple,
+  Identifier,
+  Tuple(Identifier),
+  Tuple(Identifier,Identifier,Identifier),
+  Tuple(Identifier,Identifier,Identifier)
+))
