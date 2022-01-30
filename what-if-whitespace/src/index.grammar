@@ -1,0 +1,125 @@
+@precedence {
+  a @right
+  whitespace
+}
+
+@top SourceFile { - block - }
+Block { block }
+block {
+  statement (- delimiter (- statement)?)*
+}
+
+delimiter { ";" }
+
+statement {
+  AssignmentStatement |
+  BareTupleStatement |
+  expression
+}
+AssignmentStatement {
+  (expression | BareTupleStatement)
+  -
+  "="
+  -
+  (AssignmentStatement | expression | BareTupleStatement)
+}
+BareTupleStatement[@name=Tuple] {
+  expression - "," (- tuple-section)?
+}
+
+expression {
+  non-primary-expression |
+  primary-expression
+}
+
+primary-expression {
+  "(" - parens<non-primary-expression> - ")" |
+  parens<Call> |
+  parens<Tuple> |
+  parens<InlineBlock> |
+  parens<Identifier> |
+  parens<Number> |
+  parens<Curly> |
+  parens<Braces>
+}
+
+non-primary-expression {
+  Function ~hi
+}
+
+Curly { primary-expression "{" (tuple-section? Parameters*)? "}" }
+Braces { "{" (tuple-section? Parameters*)? "}" }
+
+Call {
+  primary-expression
+  ArgumentList
+}
+
+
+Function {
+  kw<"function">
+  -
+  (
+    parens<Call> |
+    parens<Tuple> |
+    parens<InlineBlock> |
+    Tuple { "(" - parens<Identifier> - ")" } |
+    Identifier
+  )
+  -
+  kw<"end">
+}
+
+
+
+parens<--expression> {
+  --expression |
+  "(" - parens<--expression> - ")" 
+}
+
+InlineBlock {
+  "(" - expression (";" - expression (- ",")?)+ ";"? ")"
+} 
+
+ArgumentList[@name=Tuple] {
+  "(" (- tuple-section)? (- Parameters)* ")"
+}
+
+Tuple {
+  "(" (- expression "," (- tuple-section)?)? (- Parameters)* - ")"
+}
+
+Parameters {
+  ";" (- tuple-section)?
+}
+tuple-section {
+    expression (- "," - expression)* (- ",")?
+}
+
+end { kw<"end"> }
+Identifier { identifier }
+kw<term> { @specialize[@name={term},group="keyword"]<identifier, term> }
+
+@skip { Comment }
+
+- { !whitespace whitespace* }
+
+@tokens {
+  identifierChar { std.asciiLetter | $[_$\u{a1}-\u{10ffff}] }
+
+  word { identifierChar (identifierChar | std.digit)* }
+
+  identifier { word }
+
+  Number { std.digit+ }
+
+  newline { "\n" }
+  space { " " }
+  whitespace { " " | "\t" | "\n" }
+
+  Comment {
+    "#" ![\n]*
+  }
+  @precedence {
+  }
+}

@@ -1,0 +1,132 @@
+# InlineBlock
+(a; a)
+==>
+SourceFile(InlineBlock(Identifier, Identifier))
+
+# InlineBlock2
+(a(a,a); a())
+==>
+SourceFile(InlineBlock(Call(Identifier,Tuple(Identifier,Identifier)), Call(Identifier, Tuple)))
+
+# Tuple(Parameters)
+(a,b; a)
+==>
+SourceFile(Tuple(Identifier, Identifier, Parameters(Identifier)))
+
+# Tuple(Parameters)²
+(a,; a)
+==>
+SourceFile(Tuple(Identifier, Parameters(Identifier)))
+
+# NOT Tuple(Parameters)
+(a; a,)
+==>
+SourceFile(InlineBlock(Identifier,Identifier))
+
+# Tuple
+(a, a)
+==>
+SourceFile(Tuple(Identifier, Identifier))
+
+# Empty Tuple
+()
+==>
+SourceFile(Tuple)
+
+# Function ArgumentsList
+function a(a, a) end
+==>
+SourceFile(Function(function,Call(Identifier,Tuple(Identifier,Identifier)),end))
+
+
+# Function ArgumentsList with parameters
+function a(a; a) end
+==>
+SourceFile(Function(function,Call(Identifier,Tuple(Identifier,Parameters(Identifier))),end))
+
+
+# Function ArgumentsList with parameters and extra comma
+function a(a; a,) end
+==>
+SourceFile(Function(function,Call(Identifier,Tuple(Identifier,Parameters(Identifier))),end))
+
+
+# Function ArgumentsList with comma before parameters
+function a(a,; a) end
+==>
+SourceFile(Function(function,Call(Identifier,Tuple(Identifier,Parameters(Identifier))),end))
+
+
+# weird inline-block
+(a; a,;)()
+==>
+SourceFile(Call(InlineBlock(Identifier,Identifier),Tuple()))
+
+# Function ParenthesizedExpression
+function (a; a)() end
+==>
+SourceFile(Function(function,Call(InlineBlock(Identifier,Identifier),Tuple),end))
+
+
+# Function with only arguments
+function (a,a) end
+==>
+SourceFile(Function(function,Tuple(Identifier,Identifier),end))
+
+
+# Tuple as functionname
+function (a,a)(a) end
+==>
+SourceFile(Function(function,Call(Tuple(Identifier,Identifier),Tuple(Identifier)),end))
+
+
+# Arguments with only named fields
+a(;a)
+==>
+SourceFile(Call(Identifier,Tuple(Parameters(Identifier))))
+
+# Tuple with only named fields
+(;a)
+==>
+SourceFile(Tuple(Parameters(Identifier)))
+
+# Function with inline-block arguments
+function (a;a) end
+==>
+SourceFile(Function(function,InlineBlock(Identifier,Identifier),end))
+
+
+# Multiple parens
+function (((((a))))) end
+==>
+SourceFile(Function(function,Tuple(Identifier),end))
+
+
+# SHOULD FAIL No numbers
+function 10 end
+==>
+SourceFile(function,Identifier, "end")
+
+
+# Zeker wel numbers
+function a(10) end
+==>
+SourceFile(Function(function,Call(Identifier,Tuple(Number)),end))
+
+
+# Only function name
+function a end
+==>
+SourceFile(Function(function,Identifier,end))
+
+
+# Only function name
+function (a) end
+==>
+SourceFile(Function(function,Tuple(Identifier),end))
+
+
+# Nested function name!
+function (function a end)() end
+==>
+SourceFile(Function(function,Call(Function(function,Identifier,end),Tuple),end))

@@ -1,0 +1,58 @@
+# advanced #1
+{a}
+==>
+SourceFile(Braces(Identifier))
+
+# advanced #2
+a(){}
+==>
+SourceFile(Curly(Call(Identifier,Tuple)))
+
+# advanced #3
+(function x end){a; b}
+==>
+SourceFile(Curly(Function(function,Identifier,end),Identifier,Parameters(Identifier)))
+
+# baretuple #1
+x, y
+==>
+SourceFile(Tuple(Identifier,Identifier))
+
+# baretuple #2
+x, y = 10, 20
+==>
+SourceFile(AssignmentStatement(Tuple(Identifier,Identifier),Tuple(Number,Number)))
+
+# baretuple #3
+((((((x)))))), y = ((((((10)))))), 20
+==>
+SourceFile(AssignmentStatement(Tuple(Identifier,Identifier),Tuple(Number,Number)))
+
+# baretuple #4
+x, = 20
+==>
+SourceFile(AssignmentStatement(Tuple(Identifier,Identifier),Tuple(Number,Number)))
+
+
+
+# assignment #1
+x = 10
+==>
+SourceFile(AssignmentStatement(Identifier,Number))
+
+# assignment #2
+a(x) = b(x)
+==>
+SourceFile(AssignmentStatement(Call(Identifier,Tuple(Identifier)),Call(Identifier,Tuple(Identifier))))
+
+# assignment #3
+(((((x))))) = (((((10)))))
+==>
+SourceFile(AssignmentStatement(Identifier,Number))
+
+
+
+# Break it
+function ((a))((((a))))((((()),x))) end
+==>
+SourceFile(Function(function,Call(Call(Identifier,Tuple(Identifier)),Tuple(Tuple(Tuple,Identifier))),end))
