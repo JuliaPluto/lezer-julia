@@ -229,19 +229,22 @@ definition {
   FunctionDefinition
 }
 
-FunctionDefinition[closedBy="end"] {
-  !regular0
-  kw<"function">
-  Definition {
-    TypedExpression<CallExpression<e, pe>> |
+function-assignee {
+    // TypedExpression<CallExpression<e, pe>> |
     CallExpression {
       pe
       !call immediateParen
       !call args[@dynamicPrecedence=1] { ArgumentList<e, pe> }
     } |
-    ArgumentList<e, pe> |
-    Identifier ~id
-  }
+    TupleExpression<e,pe> |
+    ParenthesizedExpression<e> |
+    parens<"(" Identifier ~id ")">
+}
+
+FunctionDefinition[closedBy="end"] {
+  !regular0
+  kw<"function">
+  Definition { function-assignee }
   (kw<"where"> TypeParameters { Identifier | TypeArgumentList<e> } )?
   expressionList<e, pe>
   end
@@ -471,11 +474,13 @@ CompoundExpression[closedBy="end"] {
 }
 
 CallExpression<e, pe> {
-  pe
-  !call BroadcastDot { immediateDot "." }?
-  (nowhitespace | immediateParen) ~paren_after_expression
-  !call args[@dynamicPrecedence=1] { ArgumentList<e, pe> }
-  DoClause?
+  parens<
+    pe
+    !call BroadcastDot { immediateDot "." }?
+    (nowhitespace | immediateParen) ~paren_after_expression
+    !call args[@dynamicPrecedence=1] { ArgumentList<e, pe> }
+    DoClause?
+  >
 }
 
 DoClause[closedBy="end"] {
@@ -520,44 +525,52 @@ QuoteExpression[@dynamicPrecedence=2] {
 ////////////
 // Tuples, arguments and ParenthesizedExpression
 ////////////
-ArgumentList[closedBy=")"]<e, pe> {
-  "("
-  (tuple_section<e,pe>? ~args_or_tuple Parameters<e,pe>*)?
-  ")" ~afterclosingparen
+parens<--expression> {
+  --expression |
+  "(" parens<--expression> ")"
 }
 
 ParenthesizedExpression[closedBy=")"]<e> {
-  "("
-  list_expression<e> ~inline-block-or-tuple (";" list_expression<e>)* ";"?
-  ")"
+  parens<
+    "("
+    list_expression<e>
+    (";" list_expression<e> ","?)+
+    ";"?
+    ")"
+  >
 }
 
 TupleExpression<e, pe> {
+  parens<
+    "("
+    (list_expression<e> "," tuple_section<e,pe>?)?
+    Parameters<e,pe>*
+    ")"
+  >
+}
+
+ArgumentList[closedBy=")"]<e, pe> {
   "("
-  (tuple_section_with_comma<e,pe>? ~args_or_tuple Parameters<e,pe>*)?
-  ")"
+  (tuple_section<e,pe>? Parameters<e,pe>*)?
+  ")" ~afterclosingparen
 }
 
 Parameters<e,pe> {
   ";" tuple_section<e,pe>?
 }
-tuple_section_with_comma<e,pe> {
-    list_expression<e> "," ListCompherension<e,pe>? |
-    list_expression<e> ("," list_expression<e>)+ ("," ListCompherension<e,pe>?)?
-}
 tuple_section<e,pe> {
-    ListCompherension<e, pe> ~generator-or-tuple |
-    list_expression<e>
-    ~inline-block-or-tuple
-    ("," list_expression<e>)*
-    ("," ListCompherension<e, pe>?)?
+    ListCompherension<e, pe> |
+    list_expression<e> ("," list_expression<e>)* ("," ListCompherension<e, pe>?)?
 }
 
 list_expression<e> { e | AssignmentExpression_without_bare_tuple<e> | LonelyType }
 
+
+
 AssignmentExpression_without_bare_tuple[@name=AssignmentExpression]<e> {
   e ~id !assign (assignOperator | "=") !assign e
 }
+
 
 
 
@@ -596,7 +609,7 @@ function_expression_assignment[@name="AssignmentExpression"]<e> {
 }
 
 FunctionExpression<e, pe> {
-  (Identifier ~id | ArgumentList<e, pe>)
+  (Identifier ~id | TupleExpression<e, pe> | ParenthesizedExpression<e>)
   !arrow "->"
   (e | function_expression_assignment<e>)
 }

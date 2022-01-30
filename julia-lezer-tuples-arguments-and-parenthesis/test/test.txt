@@ -87,3 +87,18 @@ SourceFile(Tuple(Parameters(Identifier)))
 function (a;a)
 ==>
 SourceFile(function,InlineBlock(Identifier,Identifier))
+
+# Multiple parens
+function (((((a)))))
+==>
+SourceFile(function,Identifier)
+
+# SHOULD FAIL No numbers
+function 10
+==>
+SourceFile(function,Identifier)
+
+# Zeker wel numbers
+function a(10)
+==>
+SourceFile(function,Call(Identifier,Tuple(Number)))

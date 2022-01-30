@@ -3,16 +3,24 @@
 
 @top SourceFile { expression }
 
+function-name {
+  parens<Call> |
+  parens<Tuple> |
+  parens<InlineBlock> |
+  parens<Identifier>
+}
+
 expression {
-  kw<"function"> (Call | Tuple | InlineBlock) |
+  kw<"function"> function-name |
   primary-expression
 }
 
 primary-expression {
-  Tuple |
-  InlineBlock |
-  Identifier |
-  Call
+  parens<Tuple> |
+  parens<InlineBlock> |
+  parens<Identifier> |
+  parens<Call> |
+  parens<Number>
 }
 
 Call {
@@ -20,9 +28,18 @@ Call {
   ArgumentList
 }
 
+parens<--expression> {
+  --expression |
+  "(" parens<--expression> ")"
+}
+
+oneparens<--expression> {
+  "(" --expression ")"
+}
+
 InlineBlock {
   "("
-  expression ~inline-block-or-tuple (";" expression ","?)* ";"?
+  expression (";" expression ","?)+ ";"?
   ")"
 } 
 
@@ -43,7 +60,7 @@ Parameters {
   ";" tuple-section?
 }
 tuple-section {
-    expression ~inline-block-or-tuple ("," expression)* ","?
+    expression ("," expression)* ","?
 }
 
 Identifier { identifier }
@@ -57,6 +74,8 @@ kw<term> { @specialize[@name={term},group="keyword"]<identifier, term> }
   word { identifierChar (identifierChar | std.digit)* }
 
   identifier { word }
+
+  Number { std.digit+ }
 
 
   whitespace {

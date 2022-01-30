@@ -10,4 +10,10 @@
 
 ==>
 
-SourceFile(InlineBlock(Tuple,InlineBlock(Identifier),Tuple(Identifier),Tuple(Identifier,Identifier,Identifier),Tuple(Identifier,Identifier,Identifier)))
+SourceFile(InlineBlock(
+  Tuple,
+  Identifier,
+  Tuple(Identifier),
+  Tuple(Identifier,Identifier,Identifier),
+  Tuple(Identifier,Identifier,Identifier)
+))
