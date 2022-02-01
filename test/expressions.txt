@@ -34,8 +34,8 @@ f \$name"
 
 SourceFile(
   String,
-  String(Identifier),
-  String(BinaryExpression(Identifier,Identifier)),
+  String(StringInterpolation(Identifier)),
+  String(StringInterpolation(BinaryExpression(Identifier,Identifier))),
   String,
   String,
   String,
@@ -53,8 +53,8 @@ a "quoted" string"""
 
 SourceFile(
   TripleString,
-  TripleString(Identifier),
-  TripleString(BinaryExpression(Identifier,Identifier)),
+  TripleString(StringInterpolation(Identifier)),
+  TripleString(StringInterpolation(BinaryExpression(Identifier,Identifier))),
   TripleString,
 )
 
@@ -71,8 +71,8 @@ SourceFile(
 SourceFile(
   CommandString,
   CommandString,
-  CommandString(Identifier),
-  CommandString(BinaryExpression(Identifier, Identifier)),
+  CommandString(StringInterpolation(Identifier)),
+  CommandString(StringInterpolation(BinaryExpression(Identifier, Identifier))),
   CommandString,
 )
 

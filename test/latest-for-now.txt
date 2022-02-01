@@ -1,4 +1,4 @@
-# prefixed string in macro
+# BROKEN: prefixed string in macro
 @> md"""$(x)"""
 ==>
 SourceFile(MacroExpression(
@@ -9,4 +9,4 @@ SourceFile(MacroExpression(
 # prefixed string in macro but this one does work
 md"""$(x)"""
 ==>
-SourceFile(PrefixedString(Identifier,TripleString))
+SourceFile(PrefixedString(Prefix(Identifier),TripleString))
