@@ -4,23 +4,25 @@
 @top SourceFile { expression }
 
 function-name {
-  parens<Call> |
-  parens<Tuple> |
-  parens<InlineBlock> |
-  parens<Identifier>
+  Call |
+  EmptyTuple |
+  Inline |
+  Identifier |
+  parens<function-name>
 }
 
 expression {
-  kw<"function"> function-name |
+  kw<"function"> (function-name) |
   primary-expression
 }
 
 primary-expression {
-  parens<Tuple> |
-  parens<InlineBlock> |
-  parens<Identifier> |
-  parens<Call> |
-  parens<Number>
+  Identifier |
+  Call |
+  Number |
+  EmptyTuple |
+  Inline |
+  parens<primary-expression>
 }
 
 Call {
@@ -29,32 +31,19 @@ Call {
 }
 
 parens<--expression> {
-  --expression |
-  "(" parens<--expression> ")"
+  "(" --expression ~parens-or-inline ")"
 }
 
-oneparens<--expression> {
-  "(" --expression ")"
+Inline {
+  "(" Tuple { expression ("," tuple-section? | Parameters) } Parameters* ")" |
+  "(" Parameters+ ")" 
 }
-
-InlineBlock {
-  "("
-  expression (";" expression ","?)+ ";"?
-  ")"
-} 
 
 ArgumentList[@name=Tuple] {
-  "("
-  (tuple-section? Parameters*)?
-  ")"
+  Inline | parens<expression> | EmptyTuple
 }
 
-Tuple {
-  "("
-  (expression "," tuple-section?)?
-  Parameters*
-  ")"
-}
+EmptyTuple { "(" ")" }
 
 Parameters {
   ";" tuple-section?
