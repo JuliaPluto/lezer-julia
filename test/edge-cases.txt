@@ -909,6 +909,6 @@ SourceFile(
 ==>
 
 SourceFile(
-  QuoteExpression(ParenthesizedExpression(Operator)),
+  QuoteExpression("="),
   QuoteExpression(ParenthesizedExpression(Operator)),
 )

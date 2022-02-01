@@ -198,7 +198,7 @@ SelectedImport[@dynamicPrecedence=1] {
   (Identifier | ScopedIdentifier)
   !immediate immediateColon ":"
   list {
-    (RenamedImport | Identifier | MacroIdentifier | Operator)
+    (RenamedImport | Identifier | MacroIdentifier | Operator | Operator { "$" | ":" })
     (!right0 "," !right0 (RenamedImport | Identifier | MacroIdentifier | Operator))*
   }
 }
@@ -227,16 +227,19 @@ definition {
   FunctionDefinition
 }
 
+CallWithoutDo[@name="CallExpression"] {
+    pe
+    !call immediateParen ~paren_after_expression
+    !call call_without_do_args[@dynamicPrecedence=1] { ArgumentList<e, pe> }
+}
+
 FunctionDefinition[closedBy="end"] {
   !regular0
   kw<"function">
   Definition {
     TypedExpression<CallExpression<e, pe>> |
-    CallExpression {
-      pe
-      !call immediateParen
-      !call args[@dynamicPrecedence=1] { ArgumentList<e, pe> }
-    } |
+    // TypedExpression<CallWithoutDo> |
+    CallWithoutDo |
     ArgumentList<e, pe> |
     Identifier ~id
   }
@@ -296,7 +299,7 @@ e {
   statement |
   definition |
   CompoundExpression |
-  // TODO Move this to pe?
+  // TODO Move this to pe? - Actually, move this to can-be-used-as-function-callee: `@x()()` is fine.
   MacroExpression<e, pe> |
   // TODO Move this to pe?
   UnaryExpression<e> |
@@ -310,7 +313,14 @@ e {
   TransposeExpression<e> |
   // TODO Move this to pe?
   SpreadExpression<e> |
-  pe
+  pe |
+
+  // Can't be called ($() is interpolation) and `:()` is quoting,
+  // but can be used as lonely operators `$`
+  Operator { operator<"$"> | operator<":"> } |
+
+  // Sad sad number belongs to `e` because you can't do `10()` or `10.x`
+  Number
 }
 
 meta_programming<e, pe> {
@@ -319,6 +329,8 @@ meta_programming<e, pe> {
   InterpolationExpression
 }
 
+// aka can-be-used-as-function-callee
+// This means `pe()`, but also `pe.x`
 pe {
   InterpolationExpression ~variabledeclaration |
   FieldExpression<pe> |
@@ -329,7 +341,6 @@ pe {
   Identifier ~id ~variabledeclaration |
   boolean |
   Character |
-  Number ~afternumber |
   String |
   TripleString |
   CommandString |
@@ -345,8 +356,16 @@ pe {
   Operator ~op
 }
 
+// aka can-NOT-be-used-as-function-callee
+// e.g. `$()` is interpolation, `:()` is quoting and `10()` is a coefficient
+// But these are still valid in places where a lot of things aren't: `10{x}` is fine
+uncallable {
+  Operator { "$" | ":" } |
+  Number
+}
+
 ParameterizedIdentifier<e, pe> {
-  pe
+  (pe | Number)
   !immediate immediateBrace !immediate
   TypeArgumentList<e>
 }
@@ -364,20 +383,21 @@ FieldExpression<pe> {
 }
 
 SubscriptExpression[closedBy="]"]<pe> {
-  pe !immediate immediateBracket "["
-    (
-      ListCompherension<s_e, s_pe> |
-      // GeneratorExpression { s_e comprehensionClause<s_e, s_pe> } |
-      (s_e |
-       AssignmentExpression {
-         s_e !assign (assignOperator | "=") s_e
-       })
-      ("," (s_e |
-            AssignmentExpression {
-              s_e !assign (assignOperator | "=") s_e
-            }))*
-    )?
-    ","?
+  (pe | Number) !immediate immediateBracket "["
+    // TODO re-enable
+    // (
+    //   ListCompherension<s_e, s_pe> |
+    //   // GeneratorExpression { s_e comprehensionClause<s_e, s_pe> } |
+    //   (s_e |
+    //    AssignmentExpression {
+    //      s_e !assign (assignOperator | "=") s_e
+    //    })
+    //   ("," (s_e |
+    //         AssignmentExpression {
+    //           s_e !assign (assignOperator | "=") s_e
+    //         }))*
+    // )?
+    // ","?
   "]"
 }
 
@@ -425,7 +445,7 @@ s_pe {
 }
 
 SpreadExpression<pe> {
-  pe !dot "..."
+  (pe | Number) !dot "..."
 }
 
 TernaryExpression<e> {
@@ -436,9 +456,10 @@ TernaryExpression<e> {
   e
 }
 
+// TODO Technically should be `e`
 TypePart[@name="Type"] { pe }
 TypedExpression<pe> {
-  pe !typeascription (operator<"::"> | operator<"<:">) !typeascription TypePart
+  (pe | Number) !typeascription (operator<"::"> | operator<"<:">) !typeascription TypePart
 }
 
 // I guess there might be more thing "coeffecientable",
@@ -511,7 +532,7 @@ Symbol {
 }
 
 QuoteExpression[@dynamicPrecedence=2] {
-  ":" !interp (nowhitespace | immediateParen) pe
+  ":" !interp (nowhitespace | immediateParen) (pe | "(" operator<"="> ")" | operator<"..."> | operator<".">)
 }
 
 
@@ -578,7 +599,7 @@ MacroFieldExpression<pe> {
 }
 
 MacroIdentifier {
-  !regular0 "@" MacroName { word | Operator | Operator[group="operator"] { "." } }
+  !regular0 "@" MacroName { word | Operator | Operator[group="operator"] { "." | "$" | ":" } }
 }
 
 MacroArgumentList<e> {
@@ -623,8 +644,6 @@ UnaryExpression<e> {
 
 Operator[group="operator"] {
   !regular0 (
-    "$" |
-    "=" |
     bitshiftOperator |
     unaryOperatorExtra |
     assignOperator |
