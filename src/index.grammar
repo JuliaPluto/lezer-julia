@@ -41,18 +41,17 @@
 
 // TOP LEVEL
 expressionList<e, pe> {
-  terminator* ~possibly_more_expressions
-  // TODO Get rid of FunctionAssignmentExpression
-  (actual-statement | FunctionAssignmentExpression)?
-  (
-    !right0 terminator+ ~possibly_more_expressions
-    (!right0 actual-statement | FunctionAssignmentExpression)
-  )*
-  terminator* ~possibly_more_expressions
+  terminator*
+  (statement (terminator+ statement)* terminator*)?
 }
 
-actual-statement {
-  e ~id | BareTupleExpression<e> | AssignmentExpression<e>
+// Statement, meaning this is only allowed inside blocks.
+// The big difference between this and expressions is:
+// `x,y = 1,2` (statement) yields `(x,y) = (1,2)`, but
+// `(x,y = 1,2)` (expression) yields `x, (y = 1), 2`.
+statement {
+  // TODO Get rid of FunctionAssignmentExpression
+  e ~id | BareTupleExpression<e> | AssignmentExpression<e> | FunctionAssignmentExpression
 }
 
 BareTupleExpression<e> {
@@ -74,7 +73,7 @@ FunctionAssignmentExpression[@dynamicPrecedence=2] {
 
 // STATEMENTS
 
-statement {
+blocks {
   IfStatement |
   TryStatement |
   ForStatement |
@@ -98,12 +97,10 @@ IfStatement[closedBy="end else elseif"] {
   ElseClause?
   end
 }
-
 ElseifClause[closedBy="end else elseif"] {
   IfClause { kw<"elseif"> e }
     expressionList<e, pe>
 }
-
 ElseClause[closedBy="end"] {
   kw<"else">
     expressionList<e, pe>
@@ -116,12 +113,10 @@ TryStatement[closedBy="end catch finally"] {
   FinallyClause?
   end
 }
-
 CatchClause[closedBy="end finally"] {
   kw<"catch"> CatchBinding { Identifier ~id }? !regular1
     expressionList<e, pe>
 }
-
 FinallyClause[closedBy="end"] {
   kw<"finally">
     expressionList<e, pe>
@@ -139,54 +134,26 @@ WhileStatement[closedBy="end"] {
   end
 }
 
-BreakStatement {
-  kw<"break">
-}
-
-ContinueStatement {
-  kw<"continue">
-}
-
-ReturnStatement {
-  kw<"return"> (!right-2 actual-statement)?
-}
-
-VariableDeclaration {
-  (Identifier | InterpolationExpression) (!right0 "=" e)?
-}
-
-LetStatement[closedBy="end"] {
-  // TODO let bindings are basically just inline-expressions (e)
-  kw<"let"> LetBinding { list_expression<e> ("," list_expression<e>)* }? terminator
-    expressionList<e, pe>
-  end
-}
-
-ConstStatement {
-  kw<"const"> AssignmentExpression<e>
-}
-
-GlobalStatement {
-  kw<"global"> (
-    global_assignment[@dynamicPrecedence=10] { AssignmentExpression<e> } |
-    Identifier ~variabledeclaration |
-    InterpolationExpression ~variabledeclaration
-  )
-}
-
-LocalStatement {
-  kw<"local"> (
-    global_assignment[@dynamicPrecedence=10] { AssignmentExpression<e> } |
-    Identifier ~variabledeclaration |
-    InterpolationExpression ~variabledeclaration
-  )
-}
-
 QuoteStatement[closedBy="end"] {
   kw<"quote"> !right-2
     expressionList<e, pe>
   end
 }
+
+BreakStatement { kw<"break"> }
+ContinueStatement { kw<"continue"> }
+ReturnStatement { kw<"return"> (!right-2 statement)? }
+ConstStatement { kw<"const"> statement }
+GlobalStatement { kw<"global"> statement }
+LocalStatement { kw<"local"> statement }
+
+LetStatement[closedBy="end"] {
+  kw<"let"> LetBinding { list_expression<e> ("," list_expression<e>)* }? terminator
+    expressionList<e, pe>
+  end
+}
+
+
 
 ImportStatement {
   !right0 (kw<"using"> | kw<"import">)
@@ -258,28 +225,25 @@ MacroDefinition[closedBy="end"] {
   end
 }
 
-PrimitiveDefinition[closedBy="end"] {
-  kw<"primitive"> kw<"type"> Definition { pe } Number end
-}
-
-AbstractDefinition[closedBy="end"] {
-  kw<"abstract"> kw<"type"> Definition { pe } end
-}
-
-StructDefinition[closedBy="end"] {
-  kw<"mutable">? kw<"struct"> Definition { pe } !regular0
-    expressionList<e, pe>
-  end
-}
-
 ModuleDefinition[closedBy="end"] {
   kw<"module"> Definition { Identifier }
     expressionList<e, pe>
   end
 }
-
 BareModuleDefinition[closedBy="end"] {
   kw<"baremodule"> Definition { Identifier }
+    expressionList<e, pe>
+  end
+}
+
+PrimitiveDefinition[closedBy="end"] {
+  kwe<"primitive"> kwe<"type"> Definition { pe } Number end
+}
+AbstractDefinition[closedBy="end"] {
+  kwe<"abstract"> kwe<"type"> Definition { pe } end
+}
+StructDefinition[closedBy="end"] {
+  kwe<"mutable">? kw<"struct"> Definition { pe } !regular0
     expressionList<e, pe>
   end
 }
@@ -300,8 +264,9 @@ definitionHead {
 // EXPRESSIONS
 
 e {
-  statement |
+  blocks |
   definition |
+  // TODO Move this into `blocks` when I got the `s_e` vs `CompoundExpression` things figured out
   CompoundExpression |
   // TODO Move this to pe? - Actually, move this to can-be-used-as-function-callee: `@x()()` is fine.
   MacroExpression<e, pe> |
@@ -406,7 +371,7 @@ SubscriptExpression[closedBy="]"]<pe> {
 }
 
 s_e {
-  statement |
+  blocks |
   definition |
   // CompoundExpression |
   MacroExpression<s_e, s_pe> |
@@ -613,7 +578,7 @@ MacroIdentifier {
 }
 
 MacroArgumentList<e> {
-  (!regular-2 actual-statement)+
+  (!regular-2 statement)+
 }
 
 
@@ -778,6 +743,7 @@ plusOperator {
 operator<term> { [@name={term},group="operator"]{ term } } 
 
 end { kw<"end"> }
+kwe<term> { @extend[@name={term},group="keyword"]<Identifier, term> }
 kw<term> { @specialize[@name={term},group="keyword"]<Identifier, term> }
 boolean { @specialize[@name=BooleanLiteral]<Identifier, "true" | "false"> }
 
