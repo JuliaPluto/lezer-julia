@@ -40,16 +40,19 @@
 @skip { whitespace | Comment | BlockComment }
 
 // TOP LEVEL
-
 expressionList<e, pe> {
   terminator* ~possibly_more_expressions
   // TODO Get rid of FunctionAssignmentExpression
-  (e ~id | BareTupleExpression<e> | AssignmentExpression<e> | FunctionAssignmentExpression)?
+  (actual-statement | FunctionAssignmentExpression)?
   (
     !right0 terminator+ ~possibly_more_expressions
-    (!right0 e ~id | BareTupleExpression<e> | AssignmentExpression<e> | FunctionAssignmentExpression)
+    (!right0 actual-statement | FunctionAssignmentExpression)
   )*
   terminator* ~possibly_more_expressions
+}
+
+actual-statement {
+  e ~id | BareTupleExpression<e> | AssignmentExpression<e>
 }
 
 BareTupleExpression<e> {
@@ -145,7 +148,7 @@ ContinueStatement {
 }
 
 ReturnStatement {
-  kw<"return"> (!right-2 (e | BareTupleExpression<e>))?
+  kw<"return"> (!right-2 actual-statement)?
 }
 
 VariableDeclaration {
@@ -153,7 +156,8 @@ VariableDeclaration {
 }
 
 LetStatement[closedBy="end"] {
-  kw<"let"> LetBinding { VariableDeclaration ("," VariableDeclaration)* }? terminator
+  // TODO let bindings are basically just inline-expressions (e)
+  kw<"let"> LetBinding { list_expression<e> ("," list_expression<e>)* }? terminator
     expressionList<e, pe>
   end
 }
@@ -385,19 +389,19 @@ FieldExpression<pe> {
 SubscriptExpression[closedBy="]"]<pe> {
   (pe | Number) !immediate immediateBracket "["
     // TODO re-enable
-    // (
-    //   ListCompherension<s_e, s_pe> |
-    //   // GeneratorExpression { s_e comprehensionClause<s_e, s_pe> } |
-    //   (s_e |
-    //    AssignmentExpression {
-    //      s_e !assign (assignOperator | "=") s_e
-    //    })
-    //   ("," (s_e |
-    //         AssignmentExpression {
-    //           s_e !assign (assignOperator | "=") s_e
-    //         }))*
-    // )?
-    // ","?
+    (
+      ListCompherension<s_e, s_pe> |
+      // GeneratorExpression { s_e comprehensionClause<s_e, s_pe> } |
+      (s_e |
+       AssignmentExpression {
+         s_e !assign (assignOperator | "=") s_e
+       })
+      ("," (s_e |
+            AssignmentExpression {
+              s_e !assign (assignOperator | "=") s_e
+            }))*
+    )?
+    ","?
   "]"
 }
 
@@ -413,7 +417,14 @@ s_e {
   CoefficientExpression<s_e> |
   TransposeExpression<s_e> |
   SpreadExpression<s_e> |
-  s_pe
+  s_pe |
+
+  // Can't be called ($() is interpolation) and `:()` is quoting,
+  // but can be used as lonely operators `$`
+  Operator { operator<"$"> | operator<":"> } |
+
+  // Sad sad number belongs to `e` because you can't do `10()` or `10.x`
+  Number
 }
 
 s_pe {
@@ -426,7 +437,6 @@ s_pe {
   Identifier ~id |
   boolean |
   Character |
-  Number ~afternumber |
   String |
   TripleString |
   CommandString |
@@ -478,7 +488,7 @@ Coefficient {
   TupleExpression<e, pe>
 }
 CoefficientExpression[@dynamicPrecedence=5]<e> {
-  (Number ~afternumber | TransposeExpression<e>)
+  (Number | TransposeExpression<e>)
   !coeff
   (nowhitespace | immediateParen) ~paren_after_expression Coefficient
 }
@@ -603,7 +613,7 @@ MacroIdentifier {
 }
 
 MacroArgumentList<e> {
-  (!regular-2 (e | AssignmentExpression<e> | BareTupleExpression<e>))+
+  (!regular-2 actual-statement)+
 }
 
 

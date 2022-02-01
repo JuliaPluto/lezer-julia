@@ -120,5 +120,7 @@ SourceFile(AssignmentExpression(Assignee(Identifier),Number))
 # Weirdos
 :...
 :(...)
+:.
+:(.)
 ==>
 SourceFile()
