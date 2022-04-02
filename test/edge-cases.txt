@@ -894,3 +894,17 @@ SourceFile(
   QuoteExpression(ParenthesizedExpression(Operator)),
   QuoteExpression(ParenthesizedExpression(Operator)),
 )
+
+# Comment inside string
+
+md"  #  "
+Markdown.md"  #  "
+Markdown.α.md"  #  "
+
+==>
+
+SourceFile(
+    PrefixedString(Prefix(Identifier), StringWithoutInterpolation),
+    PrefixedString(Prefix(FieldExpression(Identifier, FieldName)), StringWithoutInterpolation),
+    PrefixedString(Prefix(FieldExpression(FieldExpression(Identifier, FieldName), FieldName)), StringWithoutInterpolation)
+)

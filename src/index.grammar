@@ -693,15 +693,16 @@ stringInterpolation {
   operator<"$"> immediateParen operator<"("> !regular1 e !regular1 operator<")">
 }
 
-PrefixFieldExpression[@name=FieldEpxression] {
-  PrefixFieldExpression
+PrefixFieldExpression[@name=FieldExpression] {
+  (Identifier | PrefixFieldExpression)
   !immediate immediateDot !dot "." !dot
   FieldName
 }
+
 PrefixedString {
   Prefix { Identifier | PrefixFieldExpression }
   !immediate
-  
+
   (immediateDoubleQuote StringWithoutInterpolation |
   immediateDoubleQuote TripleStringWithoutInterpolation |
   immediateBackquote CommandStringWithoutInterpolation)

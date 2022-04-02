@@ -80,9 +80,11 @@ SourceFile(CoefficientExpression(Number,Coefficient(TupleExpression(Identifier,I
 
 
 # BROKEN: FieldExpression in PrefixedString
-module.macro"aaa"
+Module.macro"aaa"
 ==>
-SourceFile()
+SourceFile(
+    PrefixedString(Prefix(FieldExpression(Identifier, FieldName)), StringWithoutInterpolation)
+)
 
 
 # FieldExpression in Coefficient
