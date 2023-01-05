@@ -794,13 +794,13 @@ Bc[begin+1:end-1]
 ==>
 
 SourceFile(
-  SubscriptExpression(Identifier,end),
-  SubscriptExpression(Identifier,BinaryExpression(end, Number)),
+  SubscriptExpression(Identifier,EndIndex),
+  SubscriptExpression(Identifier,BinaryExpression(EndIndex, Number)),
   SubscriptExpression(
     Identifier,
     BinaryExpression(
-      BinaryExpression(begin, Number),
-      BinaryExpression(end, Number),
+      BinaryExpression(BeginIndex, Number),
+      BinaryExpression(EndIndex, Number),
     ),
   ),
 )

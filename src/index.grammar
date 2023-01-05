@@ -31,7 +31,7 @@
   regular-1
   right-2 @right
   regular-2
-}
+} 
 
 @top SourceFile {
   expressionList<e, pe> | ""
@@ -344,7 +344,9 @@ pe {
   GeneratorExpression<e, pe> |
   TypedExpression<pe> |
   ParameterizedIdentifier<e, pe> |
-  Operator ~op
+  Operator ~op |
+  BeginIndex |
+  EndIndex
 }
 
 ParameterizedIdentifier<e, pe> {
@@ -368,62 +370,19 @@ FieldExpression<pe> {
 SubscriptExpression[closedBy="]"]<pe> {
   pe !immediate immediateBracket "["
     (
-      ListCompherension<s_e, s_pe> |
-      // GeneratorExpression { s_e comprehensionClause<s_e, s_pe> } |
-      (s_e |
+      ListCompherension<e, pe> |
+      // GeneratorExpression { e comprehensionClause<e, pe> } |
+      (e |
        AssignmentExpression {
-         s_e !assign (assignOperator | "=") s_e
+         e !assign (assignOperator | "=") e
        })
-      ("," (s_e |
+      ("," (e |
             AssignmentExpression {
-              s_e !assign (assignOperator | "=") s_e
+              e !assign (assignOperator | "=") e
             }))*
     )?
     ","?
   "]"
-}
-
-s_e {
-  statement |
-  definition |
-  // CompoundExpression |
-  MacroExpression<s_e, s_pe> |
-  UnaryExpression<s_e> |
-  BinaryExpression<s_e> |
-  TernaryExpression<s_e> |
-  FunctionExpression<s_e, s_pe> |
-  CoefficientExpression<s_e> |
-  TransposeExpression<s_e> |
-  SpreadExpression<s_e> |
-  s_pe
-}
-
-s_pe {
-  InterpolationExpression |
-  FieldExpression<s_pe> |
-  SubscriptExpression<s_pe> |
-  Symbol |
-  QuoteExpression |
-  CallExpression<s_e, s_pe> |
-  Identifier ~id |
-  boolean |
-  Character |
-  Number ~afternumber |
-  String |
-  TripleString |
-  CommandString |
-  PrefixedString |
-  ParenthesizedExpression<s_e> |
-  TupleExpression<s_e, s_pe> |
-  ArrayExpression<s_e> |
-  ArrayComprehensionExpression<s_e, s_pe> |
-  MatrixExpression<s_e> |
-  GeneratorExpression<s_e, s_pe> |
-  TypedExpression<s_pe> |
-  ParameterizedIdentifier<s_e, s_pe> |
-  Operator ~op |
-  kw<"begin"> |
-  kw<"end">
 }
 
 SpreadExpression<pe> {
@@ -465,7 +424,7 @@ CoefficientExpression[@dynamicPrecedence=5]<e> {
 }
 
 CompoundExpression[closedBy="end"] {
-  kw<"begin">
+  begin
     expressionList<e, pe>
   end
 }
@@ -749,7 +708,14 @@ plusOperator {
 
 operator<term> { [@name={term},group="operator"]{ term } } 
 
-end { kw<"end"> }
+@context trackIsIndexing from "./begindexing.tokens.js"
+@external specialize {Identifier} begin_end_but_cool from "./begindexing.tokens.js" {
+  begin[@name="begin"]
+  BeginIndex
+  end[@name="end"]
+  EndIndex
+}
+
 kw<term> { @specialize[@name={term},group="keyword"]<Identifier, term> }
 boolean { @specialize[@name=BooleanLiteral]<Identifier, "true" | "false"> }
 
@@ -785,6 +751,9 @@ terminator { newline | ";" }
 @external tokens commandStringContentWithoutInterpolation from "./index.tokens.js" { commandStringContentWithoutInterpolation }
 
 @tokens {
+  "["[@export="BracketL"] 
+  "]"[@export="BracketR"] 
+
   whitespace {
     " " | "\t" | "\n"
   }
