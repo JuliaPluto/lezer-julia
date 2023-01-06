@@ -87,7 +87,7 @@ pe {
   Symbol |
   QuoteExpression |
   CallExpression<e, pe> |
-  Identifier ~id |
+  Identifier |
   boolean |
   Character |
   Number |
@@ -186,8 +186,10 @@ TryStatement[closedBy="end catch finally"] {
 }
 
 CatchClause[closedBy="end finally"] {
-  kw<"catch"> CatchBinding { Identifier ~id }? !regular1
-    expressionList<e, pe>
+  kw<"catch">
+  (CatchBinding { Identifier } | terminator)
+  !regular1
+  expressionList<e, pe>
 }
 
 FinallyClause[closedBy="end"] {
@@ -247,6 +249,10 @@ QuoteStatement[closedBy="end"] {
   end
 }
 
+/////////////////
+// IMPORT STUFF
+/////////////////
+
 ImportStatement {
   !right0 (kw<"using"> | kw<"import">)
   !right0 (Import | SelectedImport)
@@ -276,6 +282,11 @@ RenamedImport {
 
 ExportStatement {
   kw<"export"> (Identifier | MacroIdentifier) (!right0 "," (Identifier | MacroIdentifier))*
+}
+
+ScopedIdentifier {
+  "." !dot ScopedIdentifier |
+  (Identifier | ScopedIdentifier)? !dot "." !dot Identifier
 }
 
 // DEFINITIONS
@@ -329,22 +340,23 @@ FunctionDefinition[closedBy="end"] {
     expressionList<e, pe>
   end
 }
+Definition { pe }
 MacroDefinition[closedBy="end"] {
-  kw<"macro"> Definition { definitionHead } immediateParen ArgumentList<e, pe>
+  kw<"macro"> Definition immediateParen ArgumentList<e, pe>
     expressionList<e, pe>
   end
 }
 
 PrimitiveDefinition[closedBy="end"] {
-  kw<"primitive"> kw<"type"> Definition { pe } Number end
+  kw<"primitive"> kw<"type"> Definition Number end
 }
 
 AbstractDefinition[closedBy="end"] {
-  kw<"abstract"> kw<"type"> Definition { pe } end
+  kw<"abstract"> kw<"type"> Definition end
 }
 
 StructDefinition[closedBy="end"] {
-  kw<"mutable">? kw<"struct"> Definition { pe } !regular0
+  kw<"mutable">? kw<"struct"> Definition !regular0
     expressionList<e, pe>
   end
 }
@@ -360,21 +372,6 @@ BareModuleDefinition[closedBy="end"] {
     expressionList<e, pe>
   end
 }
-
-// TODO Get rid of this? Only used in MacroDefinition, and not
-// .... sure if it is even useful to have there (lots of things are technically allowed in macro names)
-definitionHead {
-  InterpolationExpression |
-  FieldExpression<definitionHead> |
-  SubscriptExpression<definitionHead> |
-  QuoteExpression |
-  ParameterizedIdentifier<e, definitionHead> |
-  Identifier ~id |
-  TupleExpression |
-  ParenthesizedExpression |
-  Operator ~op
-}
-
 
 ParameterizedIdentifier<e, pe> {
   pe
@@ -399,7 +396,6 @@ SubscriptExpression[closedBy="]"]<pe> {
   pe !immediate immediateBracket "["
     (
       ListCompherension |
-      // GeneratorExpression { e comprehensionClause<e, pe> } |
       (e | simpleAssignmentExpression)
       ("," (e | simpleAssignmentExpression))*
     )?
@@ -449,18 +445,15 @@ CallExpression<e, pe> {
 DoClause[closedBy="end"] {
   kw<"do"> 
   (
-    DoClauseArguments { doArg<e, pe> ~id ("," doArg<e, pe> ~id)* } |
+    DoClauseArguments { e ("," e)* } |
     terminator
   )
-  ~possibly_more_expressions
   expressionList<e, pe>
   end
 }
 
-doArg<e,pe> { e ~id }
-
 ListCompherension {
-  e ~id comprehensionClause<e, pe> ~generator
+  e comprehensionClause<e, pe>
 }
 
 
@@ -571,7 +564,7 @@ function_expression_assignment[@name="AssignmentExpression"]<e> {
 }
 
 FunctionExpression<e, pe> {
-  (Identifier ~id | ArgumentList<e, pe>)
+  (ArgumentList { Identifier } | ArgumentList<e, pe>)
   !arrow "->"
   (e | function_expression_assignment<e>)
 }
@@ -659,12 +652,8 @@ ForClause<e, pe> {
 }
 
 ForBinding<e, pe> {
-  (Identifier ~id | TupleExpression) AssignOperator { kw<"in"> | operator<"="> | operator<"∈"> } e
-}
-
-ScopedIdentifier {
-  "." !dot ScopedIdentifier |
-  (Identifier | ScopedIdentifier)? !dot "." !dot Identifier
+  // COULD-DO `pe` here _should_ be `e`
+  pe AssignOperator { kw<"in"> | operator<"="> | operator<"∈"> } e
 }
 
 // Even though it is technically "just an unary expression",

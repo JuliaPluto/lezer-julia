@@ -533,7 +533,7 @@ function () 3 end
 
 SourceFile(
   FunctionExpression(
-    Identifier,
+    ArgumentList(Identifier),
     BinaryExpression(Identifier,Number)
   ),
   FunctionExpression(

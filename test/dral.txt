@@ -45,7 +45,12 @@ SourceFile(CallExpression(Identifier,BroadcastDot,ArgumentList(Identifier)))
 # Ternary inside function expression
 y -> y ? x : 10
 ==>
-SourceFile(FunctionExpression(Identifier,TernaryExpression(Identifier,Identifier,Number)))
+SourceFile(
+  FunctionExpression(
+    ArgumentList(Identifier),
+    TernaryExpression(Identifier,Identifier,Number)
+  )
+)
 
 
 # Typed do
@@ -57,7 +62,17 @@ SourceFile(CallExpression(Identifier,ArgumentList,DoClause(do,DoClauseArguments(
 # FunctionExpression with assignment
 foreach(c -> c.queued = true)
 ==>
-SourceFile(CallExpression(Identifier,ArgumentList(FunctionExpression(Identifier,AssignmentExpression(FieldExpression(Identifier,FieldName),BooleanLiteral)))))
+SourceFile(
+  CallExpression(
+    Identifier,
+    ArgumentList(
+      FunctionExpression(
+        ArgumentList(Identifier),
+        AssignmentExpression(FieldExpression(Identifier,FieldName),BooleanLiteral)
+      )
+    )
+  )
+)
 
 
 # FunctionExpression with assignment and another argument (Broken but it is okay-ish)
@@ -67,7 +82,7 @@ SourceFile(CallExpression(
   Identifier,
   ArgumentList(
     FunctionExpression(
-      Identifier,
+      ArgumentList(Identifier),
       AssignmentExpression(FieldExpression(Identifier,FieldName),BooleanLiteral)
     ),
     Identifier,
@@ -81,7 +96,10 @@ foreach(c -> c.queued, cells)
 SourceFile(CallExpression(
   Identifier,
   ArgumentList(
-    FunctionExpression(Identifier,FieldExpression(Identifier,FieldName)),
+    FunctionExpression(
+      ArgumentList(Identifier),
+      FieldExpression(Identifier,FieldName)
+    ),
     Identifier,
   ),
 ))
