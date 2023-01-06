@@ -15,8 +15,8 @@ SourceFile(MacroExpression(MacroIdentifier(MacroName),MacroArgumentList(Assignme
 SourceFile(MacroExpression(
   MacroIdentifier(MacroName),
   MacroArgumentList(
-    BareTupleExpression(Identifier,Identifier,Identifier),
-    BareTupleExpression(Identifier,Identifier,Identifier),
+    BareTuple(Identifier,Identifier,Identifier),
+    BareTuple(Identifier,Identifier,Identifier),
   )
 ))
 

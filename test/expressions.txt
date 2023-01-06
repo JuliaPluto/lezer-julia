@@ -128,8 +128,8 @@ SourceFile(
     AssignmentExpression(Identifier,Identifier),
   ),
   AssignmentExpression(
-    BareTupleExpression(Identifier,Identifier),
-    BareTupleExpression(Identifier,Identifier,Identifier)
+    BareTuple(Identifier,Identifier),
+    BareTuple(Identifier,Identifier,Identifier)
   )
 )
 

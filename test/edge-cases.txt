@@ -55,7 +55,7 @@ SourceFile(String)
 ==>
 
 SourceFile(
-  BareTupleExpression(String,String)
+  BareTuple(String,String)
 )
 
 # Triple String

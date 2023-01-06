@@ -239,7 +239,7 @@ SourceFile(
     const,
     AssignmentExpression(
       Identifier,
-      BareTupleExpression(Identifier,Identifier)
+      BareTuple(Identifier,Identifier)
     ),
   ),
 )

@@ -128,7 +128,7 @@ SourceFile(
   ReturnStatement(return,
     BinaryExpression(Identifier,Identifier)),
   ReturnStatement(return,
-    BareTupleExpression(Identifier,Identifier,Identifier))
+    BareTuple(Identifier,Identifier,Identifier))
 )
 
 # Let statements
@@ -161,7 +161,7 @@ SourceFile(
   ConstStatement(
     const,
     AssignmentExpression(
-      BareTupleExpression(Identifier,Identifier),
+      BareTuple(Identifier,Identifier),
       Number,
     ),
   ),

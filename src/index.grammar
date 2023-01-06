@@ -9,6 +9,7 @@
   typeonlyascription @left
   typeascription @left
   call
+  
   coeff
   power @left
   bitshift @left
@@ -20,10 +21,10 @@
   contains @left
   band @right
   bor @right
+  
   ternary @right
   pair @right
   forbinding
-  special_assign
   where @left
   baretuple
   assign @right
@@ -55,10 +56,10 @@
 // EXPRESSIONS
 
 e {
-  statement |
+  blocky_things |
   definition |
   CompoundExpression |
-  MacroExpression<e, pe> |
+  MacroExpression |
   UnaryExpression<e> |
   BinaryExpression<e> |
   TernaryExpression<e> |
@@ -70,13 +71,17 @@ e {
   pe
 }
 
-meta_programming<e, pe> {
-  PrefixedString |
-  MacroExpression<e, pe> |
-  InterpolationExpression
-}
-
 pe {
+  Identifier |
+  boolean |
+  Character |
+  Number |
+  String |
+  Symbol |
+  Operator ~op |
+  BeginIndex |
+  EndIndex |
+
   InterpolationExpression |
   FieldExpression<pe> |
   TransposeExpression<e> |
@@ -84,14 +89,8 @@ pe {
   // instead of resorting to PrefixedString
   PrefixFieldExpression |
   SubscriptExpression<pe> |
-  Symbol |
   QuoteExpression |
   CallExpression<e, pe> |
-  Identifier |
-  boolean |
-  Character |
-  Number |
-  String |
   TripleString |
   CommandString |
   PrefixedString |
@@ -102,10 +101,7 @@ pe {
   MatrixExpression<e> |
   GeneratorExpression |
   TypedExpression<pe> |
-  ParameterizedIdentifier<e, pe> |
-  Operator ~op |
-  BeginIndex |
-  EndIndex
+  ParameterizedIdentifier<e, pe>
 }
 
 
@@ -115,34 +111,42 @@ pe {
 
 expressionList<e, pe> {
   !right0
-  terminator* ~possibly_more_expressions
-  !right0 
-  (e ~id | BareTupleExpression<e> | AssignmentExpression<e>)?
+  terminator*
+  !right0
+  statement?
   (
-    !right0 terminator+ ~possibly_more_expressions
-    (!right0 e | BareTupleExpression<e> | AssignmentExpression<e>)
+    !right0 terminator+
+    (!right0 statement)
   )*
   terminator* !right0
 }
 
-BareTupleExpression<e> {
+// AssignmentStatement and BareTuple are the only
+// nodes that can only exist at the top level of blocks:
+// Inside anything the BareTuple can't exist because it becomes
+// a normal tuple, and assignment also can't have BareTuple inside
+// so it become a AssignmentExpression instead.
+statement {
+  e | AssignmentStatement | BareTuple
+}
+BareTuple {
   e (!baretuple "," e)+
 }
-
-AssignmentExpression<e> {
-  // Assignee { e | BareTupleExpression }
+AssignmentStatement[@name="AssignmentExpression"] {
+  // Assignee { e | BareTuple }
   // ????
-  (e | BareTupleExpression<e>)
+  (e | BareTuple)
   !assign (assignOperator | "=")
-  (e | AssignmentExpression<e> | BareTupleExpression<e>)
+  statement
 }
-simpleAssignmentExpression[@name="AssignmentExpression"] {
-  e !assign (assignOperator | "=") (e | simpleAssignmentExpression)
+
+AssignmentExpression {
+  e !assign (assignOperator | "=") (e | AssignmentExpression)
 }
 
 // STATEMENTS
 
-statement {
+blocky_things {
   IfStatement |
   TryStatement |
   ForStatement |
@@ -218,7 +222,7 @@ ContinueStatement {
 }
 
 ReturnStatement {
-  kw<"return"> (!right-2 (e | BareTupleExpression<e>))?
+  kw<"return"> (!right-2 statement)?
 }
 
 VariableDeclaration {
@@ -232,15 +236,15 @@ LetStatement[closedBy="end"] {
 }
 
 ConstStatement {
-  kw<"const"> AssignmentExpression<e>
+  kw<"const"> AssignmentStatement
 }
 
 GlobalStatement {
-  kw<"global"> (e | !special_assign AssignmentExpression<e>)
+  kw<"global"> statement
 }
 
 LocalStatement {
-  kw<"local"> (e | !special_assign AssignmentExpression<e>)
+  kw<"local"> statement
 }
 
 QuoteStatement[closedBy="end"] {
@@ -313,6 +317,9 @@ Where {
 
 FunctionDefinition[closedBy="end"] {
   !regular0 kw<"function">
+    // Instead of ALL THIS SHIT
+    // I could also do `Definition { pe }` and it would work perfectly
+    // TODO Still need to make `Where` work in `pe`...
     Definition {
       // Nudgle lezer to `CallExpression { Identifier ArgumentList }`
       // instead of `Identifier TupleExpression`
@@ -362,13 +369,13 @@ StructDefinition[closedBy="end"] {
 }
 
 ModuleDefinition[closedBy="end"] {
-  kw<"module"> Definition { Identifier }
+  kw<"module"> Definition
     expressionList<e, pe>
   end
 }
 
 BareModuleDefinition[closedBy="end"] {
-  kw<"baremodule"> Definition { Identifier }
+  kw<"baremodule"> Definition
     expressionList<e, pe>
   end
 }
@@ -396,8 +403,8 @@ SubscriptExpression[closedBy="]"]<pe> {
   pe !immediate immediateBracket "["
     (
       ListCompherension |
-      (e | simpleAssignmentExpression)
-      ("," (e | simpleAssignmentExpression))*
+      (e | AssignmentExpression)
+      ("," (e | AssignmentExpression))*
     )?
     ","?
   "]"
@@ -473,7 +480,7 @@ Symbol[@dynamicPrecedence=10] {
   ":" !interp (nowhitespace | immediateParen) SymbolName { word }
 }
 
-QuoteExpression[@dynamicPrecedence=10] {
+QuoteExpression[@dynamicPrecedence=9] {
   ":" !interp (nowhitespace | immediateParen) pe
 }
 
@@ -484,10 +491,10 @@ QuoteExpression[@dynamicPrecedence=10] {
 inner_tuple {
   (
     ListCompherension |
-    (e | simpleAssignmentExpression)
+    (e | AssignmentExpression)
     ~tuple-vs-parens
     (
-      ("," (e | simpleAssignmentExpression))*
+      ("," (e | AssignmentExpression))*
       ("," ListCompherension?)?
     )?
   )
@@ -519,9 +526,9 @@ ArgumentList<e, pe> {
 // (TODO I don't like this exception!!)
 ParenthesizedExpression[closedBy=")", @dynamicPrecedence=1] {
   "("
-  (e | simpleAssignmentExpression)
+  (e | AssignmentExpression)
   ~tuple-vs-parens
-  (";" (e | simpleAssignmentExpression) ","?)*
+  (";" (e | AssignmentExpression) ","?)*
   ";"?
   ")"
 }
@@ -533,16 +540,18 @@ GeneratorExpression[closedBy=")"] {
 // Macros!
 /////////////
 
-MacroExpression<e, pe> {
-  (MacroIdentifier | MacroFieldExpression<pe>)
+MacroExpression {
+  (MacroIdentifier | MacroFieldExpression)
   (
-    !right0 immediateParen args[@dynamicPrecedence=1] { ArgumentList<e, pe> } DoClause? | // @use_memo([]) do; ... end
-    !immediate immediateBrace !immediate TypeArgumentList | // @NamedTuple{x::Int}
+    immediateParen
+    args[@dynamicPrecedence=1] { ArgumentList<e, pe> }
+    DoClause? | // @use_memo([]) do; ... end
+    immediateBrace TypeArgumentList | // @NamedTuple{x::Int}
     MacroArgumentList<e> // Lame, normal macro call pfffft
   )?
 }
 
-MacroFieldExpression<pe> {
+MacroFieldExpression {
   pe !immediate immediateDot !dot "." !dot MacroIdentifier |
   MacroIdentifier !immediate immediateDot !dot "." !dot MacroFieldName { word }
 }
@@ -552,21 +561,13 @@ MacroIdentifier {
 }
 
 MacroArgumentList<e> {
-  (!regular-2 (e | AssignmentExpression<e> | BareTupleExpression<e>))+
-}
-
-
-// TODO Rename to and merge with `AssignmentExpression_without_bare_tuple`
-function_expression_assignment[@name="AssignmentExpression"]<e> {
-  e
-  !assign (assignOperator | "=")
-  (e | function_expression_assignment<e>)
+  (!regular-2 statement)+
 }
 
 FunctionExpression<e, pe> {
   (ArgumentList { Identifier } | ArgumentList<e, pe>)
   !arrow "->"
-  (e | function_expression_assignment<e>)
+  (e | AssignmentExpression)
 }
 
 contains_operator { kw<"in"> | kw<"isa"> }
