@@ -7,8 +7,8 @@
   transpose
   typeonlyascription @left
   typeascription @left
-  coeff
   call
+  coeff
   power @left
   bitshift @left
   times @left
@@ -315,16 +315,16 @@ meta_programming<e, pe> {
 }
 
 pe {
-  InterpolationExpression ~variabledeclaration |
+  InterpolationExpression |
   FieldExpression<pe> |
   SubscriptExpression<pe> |
   Symbol |
   QuoteExpression |
   CallExpression<e, pe> |
-  Identifier ~id ~variabledeclaration |
+  Identifier ~id |
   boolean |
   Character |
-  Number ~afternumber |
+  Number |
   String |
   TripleString |
   CommandString |
@@ -395,25 +395,10 @@ TypedExpression<pe> {
   pe !typeascription (operator<"::"> | operator<"<:">) !typeascription TypePart
 }
 
-// I guess there might be more thing "coeffecientable",
-// but for now this is the list
-Coefficient {
-  CallExpression {
-    Identifier
-    !call immediateParen
-    !call args[@dynamicPrecedence=1] { ArgumentList<e, pe> }
-  } |
-  Identifier |
-  FieldExpression<Identifier> |
-  InterpolationExpression |
-  PrefixedString |
-  ParenthesizedExpression<e> |
-  TupleExpression<e, pe>
-}
 CoefficientExpression[@dynamicPrecedence=5]<e> {
-  (Number ~afternumber | TransposeExpression<e>)
+  (Number | TransposeExpression<e>)
   !coeff
-  (nowhitespace | immediateParen) ~paren_after_expression Coefficient
+  (nowhitespace | immediateParen) Coefficient { pe }
 }
 
 CompoundExpression[closedBy="end"] {
@@ -425,7 +410,7 @@ CompoundExpression[closedBy="end"] {
 CallExpression<e, pe> {
   pe
   !call BroadcastDot { immediateDot "." }?
-  (nowhitespace | immediateParen) ~paren_after_expression
+  (nowhitespace | immediateParen)
   !call args[@dynamicPrecedence=1] { ArgumentList<e, pe> }
   DoClause?
 }
