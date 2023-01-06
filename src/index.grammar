@@ -22,6 +22,7 @@
   ternary @right
   pair @right
   forbinding
+  special_assign
   baretuple
   assign @right
   arrow @right
@@ -165,19 +166,11 @@ ConstStatement {
 }
 
 GlobalStatement {
-  kw<"global"> (
-    global_assignment[@dynamicPrecedence=10] { AssignmentExpression<e> } |
-    Identifier ~variabledeclaration |
-    InterpolationExpression ~variabledeclaration
-  )
+  kw<"global"> (e | !special_assign AssignmentExpression<e>)
 }
 
 LocalStatement {
-  kw<"local"> (
-    global_assignment[@dynamicPrecedence=10] { AssignmentExpression<e> } |
-    Identifier ~variabledeclaration |
-    InterpolationExpression ~variabledeclaration
-  )
+  kw<"local"> (e | !special_assign AssignmentExpression<e>)
 }
 
 QuoteStatement[closedBy="end"] {
