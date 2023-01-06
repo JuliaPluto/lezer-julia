@@ -26,6 +26,7 @@
   pair @right
   forbinding
   where @left
+  
   baretuple
   assign @right
   arrow @right
@@ -58,7 +59,6 @@
 e {
   blocky_things |
   definition |
-  CompoundExpression |
   MacroExpression |
   UnaryExpression<e> |
   BinaryExpression<e> |
@@ -133,15 +133,26 @@ BareTuple {
   e (!baretuple "," e)+
 }
 AssignmentStatement[@name="AssignmentExpression"] {
-  // Assignee { e | BareTuple }
-  // ????
+  // NOTE I'm afraid this `!assign` will skew some matches
+  // .... to AssignmentStatement when they can have better matches
+  // .... ^^ Exactly what happened
+  // Assignee { !assign e | !assign BareTuple }
+  // TODO Need to get `a, = tuple` working. Curiously, this is the only
+  // .... place that a BareTuple can have a trailing comma
+  // .... (`tuple = 10,` is not allowed?!)
   (e | BareTuple)
   !assign (assignOperator | "=")
   statement
 }
 
 AssignmentExpression {
-  e !assign (assignOperator | "=") (e | AssignmentExpression)
+  // Using `Assignee` here makes stuff like `c -> x = true` parse as
+  // `(c -> x) = true` rather than `c -> (x = true)` 😒
+  // Assignee { e }
+  e
+  !assign
+  (assignOperator | "=")
+  (e | AssignmentExpression)
 }
 
 // STATEMENTS
@@ -160,7 +171,8 @@ blocky_things {
   ContinueStatement |
   ReturnStatement |
   ImportStatement |
-  ExportStatement
+  ExportStatement |
+  CompoundExpression
 }
 
 IfStatement[closedBy="end else elseif"] {
@@ -477,11 +489,20 @@ InterpolationExpression[@dynamicPrecedence=10] {
 }
 
 Symbol[@dynamicPrecedence=10] {
-  ":" !interp (nowhitespace | immediateParen) SymbolName { word }
+  ":" !interp (nowhitespace | immediateParen)
+  // So assign operators are special because you can't use them as
+  // normal identifiers e.g. `+` is valid code, `+=` isn't, while `:+=` is!
+  SymbolName { word | Operator { assignOperator } }
 }
 
 QuoteExpression[@dynamicPrecedence=9] {
-  ":" !interp (nowhitespace | immediateParen) pe
+  ":" !interp (nowhitespace | immediateParen)
+  // And the most exceptional is `=`, because you can't even do `:=`,
+  // you have to do `:(=)` to get an equals symbol.
+  (
+    pe |
+    "(" ParenthesizedExpression { Operator { assignOperator | "=" } } ")"
+  )
 }
 
 
@@ -601,10 +622,8 @@ UnaryExpression<e> {
 Operator[group="operator"] {
   !regular0 (
     "$" |
-    "=" |
     bitshiftOperator |
     unaryOperatorExtra |
-    assignOperator |
     plusOperator |
     timesOperator |
     powerOperator |
