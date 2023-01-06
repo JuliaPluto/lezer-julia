@@ -1,6 +1,7 @@
 @precedence {
   immediate
   dot @left
+  single-is-special
   prefix
   postfix
   interp @left
@@ -60,14 +61,19 @@ BareTupleExpression<e> {
 }
 
 AssignmentExpression<e> {
-  ((e | BareTupleExpression<e>)
+  // Assignee { e | BareTupleExpression }
+  // ????
+  (e | BareTupleExpression<e>)
   !assign (assignOperator | "=")
-  (e | AssignmentExpression<e> | BareTupleExpression<e>))
+  (e | AssignmentExpression<e> | BareTupleExpression<e>)
+}
+simpleAssignmentExpression[@name="AssignmentExpression"] {
+  e !assign (assignOperator | "=") (e | simpleAssignmentExpression)
 }
 
 FunctionAssignmentExpression[@dynamicPrecedence=2] {
   Identifier ~id immediateParen !call ArgumentList<e, pe> ~id
-  (kw<"where"> TypeArgumentList<e>)?
+  (kw<"where"> TypeArgumentList)?
   !assign (assignOperator | "=")
   !assign (e | AssignmentExpression<e>)
 }
@@ -223,23 +229,34 @@ definition {
 }
 
 FunctionDefinition[closedBy="end"] {
-  !regular0
-  kw<"function">
-  Definition {
-    TypedExpression<CallExpression<e, pe>> |
-    CallExpression {
-      pe
-      !call immediateParen
-      !call args[@dynamicPrecedence=1] { ArgumentList<e, pe> }
-    } |
-    [@dynamicPrecedence=10] { ArgumentList<e, pe> } |
-    Identifier ~id
-  }
-  (kw<"where"> TypeParameters { Identifier | TypeArgumentList<e> } )?
-  expressionList<e, pe>
+  !regular0 kw<"function">
+    Definition {
+      // Nudgle lezer to `CallExpression { Identifier ArgumentList }`
+      // instead of `Identifier TupleExpression`
+      CallExpression[@dynamicPrecedence=9] {
+        pe ~function-fix
+        ArgumentList<e, pe>
+        ~function-fix
+        // ReturnType { "::" pe }?
+      } |
+      TypedExpression[@dynamicPrecedence=10] {
+        CallExpression {
+          pe ~function-fix
+          ArgumentList<e, pe>
+        }
+        ~function-fix
+        "::"
+        Type { pe }
+      } |
+      Identifier ~function-fix |
+      ArgumentList<e, pe> ~function-fix
+    }
+
+    // Where { kw<"where"> TypeParameters { Identifier | TypeArgumentList } }?
+    (kw<"where"> TypeParameters { Identifier | TypeArgumentList })?
+    expressionList<e, pe>
   end
 }
-
 MacroDefinition[closedBy="end"] {
   kw<"macro"> Definition { definitionHead } immediateParen ArgumentList<e, pe>
     expressionList<e, pe>
@@ -281,7 +298,8 @@ definitionHead {
   QuoteExpression |
   ParameterizedIdentifier<e, definitionHead> |
   Identifier ~id |
-  ParenthesizedExpression<definitionHead> |
+  TupleExpression |
+  ParenthesizedExpression |
   Operator ~op
 }
 
@@ -305,6 +323,7 @@ e {
   TransposeExpression<e> |
   // TODO Move this to pe?
   SpreadExpression<e> |
+  LonelyType |
   pe
 }
 
@@ -329,12 +348,12 @@ pe {
   TripleString |
   CommandString |
   PrefixedString |
-  ParenthesizedExpression<e> |
-  TupleExpression<e, pe> |
+  ParenthesizedExpression |
+  TupleExpression |
   ArrayExpression<e> |
   ArrayComprehensionExpression<e, pe> |
   MatrixExpression<e> |
-  GeneratorExpression<e, pe> |
+  GeneratorExpression |
   TypedExpression<pe> |
   ParameterizedIdentifier<e, pe> |
   Operator ~op |
@@ -345,11 +364,11 @@ pe {
 ParameterizedIdentifier<e, pe> {
   pe
   !immediate immediateBrace !immediate
-  TypeArgumentList<e>
+  TypeArgumentList
 }
 
-TypeArgumentList[closedBy="}"]<e> {
-  "{" (e | LonelyType) ("," (e | LonelyType))* ","? "}"
+TypeArgumentList[closedBy="}"] {
+  "{" e ("," e)* ","? "}"
 }
 
 FieldName { word }
@@ -363,16 +382,10 @@ FieldExpression<pe> {
 SubscriptExpression[closedBy="]"]<pe> {
   pe !immediate immediateBracket "["
     (
-      ListCompherension<e, pe> |
+      ListCompherension |
       // GeneratorExpression { e comprehensionClause<e, pe> } |
-      (e |
-       AssignmentExpression {
-         e !assign (assignOperator | "=") e
-       })
-      ("," (e |
-            AssignmentExpression {
-              e !assign (assignOperator | "=") e
-            }))*
+      (e | simpleAssignmentExpression)
+      ("," (e | simpleAssignmentExpression))*
     )?
     ","?
   "]"
@@ -426,9 +439,9 @@ DoClause[closedBy="end"] {
   end
 }
 
-doArg<e,pe> { e ~id | LonelyType }
+doArg<e,pe> { e ~id }
 
-ListCompherension<e, pe> {
+ListCompherension {
   e ~id comprehensionClause<e, pe> ~generator
 }
 
@@ -457,46 +470,53 @@ QuoteExpression[@dynamicPrecedence=2] {
 ////////////
 // Tuples, arguments and ParenthesizedExpression
 ////////////
-ArgumentList[closedBy=")"]<e, pe> {
-  "("
-  (tuple_section<e,pe>? ~args_or_tuple Parameters<e,pe>*)?
-  ")" ~afterclosingparen
+inner_tuple {
+  (
+    ListCompherension |
+    (e | simpleAssignmentExpression)
+    ~tuple-vs-parens
+    (
+      ("," (e | simpleAssignmentExpression))*
+      ("," ListCompherension?)?
+    )?
+  )
 }
-
-ParenthesizedExpression[closedBy=")"]<e> {
+TupleExpression {
   "("
-  list_expression<e> ~inline-block-or-tuple (";" list_expression<e>)* ";"?
+  (
+    inner_tuple?
+    // Calling this `Parameters` now for backwards compatibility...
+    // but I feel like all inner_tuples in a TupleExpression should
+    // be equal and just "inner" or something
+    ((";")+ Parameters { inner_tuple })*
+    (";")*
+  )?
+  ")"
+}
+// I just ignore `e` and `pe` here lol
+ArgumentList<e, pe> {
+  "("
+  (
+    inner_tuple?
+    ((";")+ Parameters { inner_tuple })*
+    (";")*
+  )?
   ")"
 }
 
-TupleExpression<e, pe> {
+// Specific Tuple for when there is just one expression
+// (TODO I don't like this exception!!)
+ParenthesizedExpression[closedBy=")", @dynamicPrecedence=1] {
   "("
-  (tuple_section_with_comma<e,pe>? ~args_or_tuple Parameters<e,pe>*)?
+  (e | simpleAssignmentExpression)
+  ~tuple-vs-parens
+  (";" (e | simpleAssignmentExpression) ","?)*
+  ";"?
   ")"
 }
-
-Parameters<e,pe> {
-  ";" tuple_section<e,pe>?
+GeneratorExpression[closedBy=")"] {
+  "(" ListCompherension !single-is-special ")"
 }
-tuple_section_with_comma<e,pe> {
-    list_expression<e> "," ListCompherension<e,pe>? |
-    list_expression<e> ("," list_expression<e>)+ ("," ListCompherension<e,pe>?)?
-}
-tuple_section<e,pe> {
-    ListCompherension<e, pe> ~generator-or-tuple |
-    list_expression<e>
-    ~inline-block-or-tuple
-    ("," list_expression<e>)*
-    ("," ListCompherension<e, pe>?)?
-}
-
-list_expression<e> { e | AssignmentExpression_without_bare_tuple<e> | LonelyType }
-
-AssignmentExpression_without_bare_tuple[@name=AssignmentExpression]<e> {
-  e ~id !assign (assignOperator | "=") !assign e
-}
-
-
 
 //////////////
 // Macros!
@@ -506,7 +526,7 @@ MacroExpression<e, pe> {
   (MacroIdentifier | MacroFieldExpression<pe>)
   (
     !right0 immediateParen args[@dynamicPrecedence=1] { ArgumentList<e, pe> } DoClause? | // @use_memo([]) do; ... end
-    !immediate immediateBrace !immediate TypeArgumentList<e> | // @NamedTuple{x::Int}
+    !immediate immediateBrace !immediate TypeArgumentList | // @NamedTuple{x::Int}
     MacroArgumentList<e> // Lame, normal macro call pfffft
   )?
 }
@@ -606,10 +626,6 @@ ArrayComprehensionExpression[closedBy="]"]<e, pe> {
   "[" !regular0 e !regular0 comprehensionClause<e, pe> "]"
 }
 
-GeneratorExpression[closedBy=")"]<e, pe> {
-  "(" ListCompherension<e, pe> ~generator-or-tuple ")" ~afterclosingparen
-}
-
 comprehensionClause<e, pe> {
   ForClause<e, pe> (ForClause<e, pe> | IfClause<e, pe>)*
 }
@@ -623,7 +639,7 @@ ForClause<e, pe> {
 }
 
 ForBinding<e, pe> {
-  (Identifier ~id | TupleExpression<e, pe>) AssignOperator { kw<"in"> | operator<"="> | operator<"∈"> } e
+  (Identifier ~id | TupleExpression) AssignOperator { kw<"in"> | operator<"="> | operator<"∈"> } e
 }
 
 ScopedIdentifier {

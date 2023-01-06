@@ -328,7 +328,7 @@ SourceFile(
   UnaryExpression(Operator, Identifier),
   UnaryExpression(Operator, Number),
   TransposeExpression(ArrayExpression(Identifier)),
-  CallExpression(Operator, ArgumentList(BinaryExpression(Identifier,Identifier))),
+  UnaryExpression(Operator, ParenthesizedExpression(BinaryExpression(Identifier,Identifier))),
 )
 
 # The ternary operator
