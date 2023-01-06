@@ -1,11 +1,8 @@
-// Tokens.js
+// begindexing.tokens.js
 
-import { ExternalTokenizer, ContextTracker } from "@lezer/lr";
+import { ContextTracker } from "@lezer/lr";
+import { BracketL, BracketR, immediateBracket } from "./index.terms.js";
 import * as terms from "./index.terms.js";
-
-// TERMINATOR
-
-let { BracketL, BracketR, immediateBracket } = terms;
 
 export const trackIsIndexing = new ContextTracker({
   start: {
@@ -48,20 +45,8 @@ export const trackIsIndexing = new ContextTracker({
       return context.parent;
     }
 
-    // if (term == indent)
-    //   return new IndentLevel(
-    //     context,
-    //     countIndent(input.read(input.pos, stack.pos))
-    //   );
-    // if (term == dedent) return context.parent;
-    // if (term == ParenL || term == BracketL || term == BraceL)
-    //   return new IndentLevel(context, -1);
-    // return context;
     return context;
   },
-  // hash(context) {
-  //   return context.depth;
-  // },
 });
 
 export const begin_end_but_cool = (input, stack) => {

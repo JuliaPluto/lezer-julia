@@ -57,6 +57,16 @@ export const newline = new ExternalTokenizer((input, stack) => {
   }
 });
 
+export const terminator = new ExternalTokenizer((input, stack) => {
+  let c = input.peek(0);
+  if (c === CHAR_NEWLINE || c === CHAR_SEMICOLON) {
+    if (stack.canShift(terms.terminator)) {
+      input.acceptToken(terms.terminator, 1);
+      return;
+    }
+  }
+});
+
 // IDENTIFIER
 // See https://github.com/JuliaLang/julia/blob/8218480f059b7d2ba3388646497b76759248dd86/src/flisp/julia_extensions.c#L67-L152
 

@@ -24,9 +24,22 @@
   pair @right
   forbinding
   special_assign
+  where @left
   baretuple
   assign @right
   arrow @right
+
+  array
+  array-comprehension
+
+  // This makes it so `[a $b]` is parsed correctly,
+  // but it makes `[a $ b]` not work, sadly.
+  // But I care more about the former 🤷‍♀️
+  matrix
+  plus_but_sometimes_interpolation @right
+
+  for-statement
+  
   regular1
   right0 @right
   regular0
@@ -39,6 +52,63 @@
   expressionList<e, pe> | ""
 }
 
+// EXPRESSIONS
+
+e {
+  statement |
+  definition |
+  CompoundExpression |
+  MacroExpression<e, pe> |
+  UnaryExpression<e> |
+  BinaryExpression<e> |
+  TernaryExpression<e> |
+  FunctionExpression<e, pe> |
+  CoefficientExpression<e> |
+  SpreadExpression<e> |
+  LonelyType |
+  Where |
+  pe
+}
+
+meta_programming<e, pe> {
+  PrefixedString |
+  MacroExpression<e, pe> |
+  InterpolationExpression
+}
+
+pe {
+  InterpolationExpression |
+  FieldExpression<pe> |
+  TransposeExpression<e> |
+  // Quick fix to trick lezer into choosing PrefixFieldExpression
+  // instead of resorting to PrefixedString
+  PrefixFieldExpression |
+  SubscriptExpression<pe> |
+  Symbol |
+  QuoteExpression |
+  CallExpression<e, pe> |
+  Identifier ~id |
+  boolean |
+  Character |
+  Number |
+  String |
+  TripleString |
+  CommandString |
+  PrefixedString |
+  ParenthesizedExpression |
+  TupleExpression |
+  ArrayExpression<e> |
+  ArrayComprehensionExpression<e, pe> |
+  MatrixExpression<e> |
+  GeneratorExpression |
+  TypedExpression<pe> |
+  ParameterizedIdentifier<e, pe> |
+  Operator ~op |
+  BeginIndex |
+  EndIndex
+}
+
+
 @skip { whitespace | Comment | BlockComment }
 
 // TOP LEVEL
@@ -47,13 +117,12 @@ expressionList<e, pe> {
   !right0
   terminator* ~possibly_more_expressions
   !right0 
-  // TODO Get rid of FunctionAssignmentExpression
-  (e ~id | BareTupleExpression<e> | AssignmentExpression<e> | FunctionAssignmentExpression)?
+  (e ~id | BareTupleExpression<e> | AssignmentExpression<e>)?
   (
     !right0 terminator+ ~possibly_more_expressions
-    (!right0 e ~id | BareTupleExpression<e> | AssignmentExpression<e> | FunctionAssignmentExpression)
+    (!right0 e | BareTupleExpression<e> | AssignmentExpression<e>)
   )*
-  terminator* ~possibly_more_expressions
+  terminator* !right0
 }
 
 BareTupleExpression<e> {
@@ -69,13 +138,6 @@ AssignmentExpression<e> {
 }
 simpleAssignmentExpression[@name="AssignmentExpression"] {
   e !assign (assignOperator | "=") (e | simpleAssignmentExpression)
-}
-
-FunctionAssignmentExpression[@dynamicPrecedence=2] {
-  Identifier ~id immediateParen !call ArgumentList<e, pe> ~id
-  (kw<"where"> TypeArgumentList)?
-  !assign (assignOperator | "=")
-  !assign (e | AssignmentExpression<e>)
 }
 
 // STATEMENTS
@@ -134,7 +196,7 @@ FinallyClause[closedBy="end"] {
 }
 
 ForStatement[closedBy="end"] {
-  !regular0 kw<"for"> ForBinding<e, pe> ("," ForBinding<e, pe>)*
+  !for-statement kw<"for"> ForBinding<e, pe> ("," ForBinding<e, pe>)*
     expressionList<e, pe>
   end
 }
@@ -228,6 +290,16 @@ definition {
   FunctionDefinition
 }
 
+Where {
+  e
+  !where
+  kw<"where">
+  TypeParameters {
+    !where e |
+    type_argument_list
+  }
+}
+
 FunctionDefinition[closedBy="end"] {
   !regular0 kw<"function">
     Definition {
@@ -253,7 +325,7 @@ FunctionDefinition[closedBy="end"] {
     }
 
     // Where { kw<"where"> TypeParameters { Identifier | TypeArgumentList } }?
-    (kw<"where"> TypeParameters { Identifier | TypeArgumentList })?
+    (kw<"where"> TypeParameters { Identifier | type_argument_list })?
     expressionList<e, pe>
   end
 }
@@ -303,63 +375,6 @@ definitionHead {
   Operator ~op
 }
 
-// EXPRESSIONS
-
-e {
-  statement |
-  definition |
-  CompoundExpression |
-  // TODO Move this to pe?
-  MacroExpression<e, pe> |
-  // TODO Move this to pe?
-  UnaryExpression<e> |
-  // TODO Move this to pe?
-  BinaryExpression<e> |
-  TernaryExpression<e> |
-  FunctionExpression<e, pe> |
-  // TODO Move this to pe?
-  CoefficientExpression<e> |
-  // TODO Move this to pe?
-  TransposeExpression<e> |
-  // TODO Move this to pe?
-  SpreadExpression<e> |
-  LonelyType |
-  pe
-}
-
-meta_programming<e, pe> {
-  PrefixedString |
-  MacroExpression<e, pe> |
-  InterpolationExpression
-}
-
-pe {
-  InterpolationExpression |
-  FieldExpression<pe> |
-  SubscriptExpression<pe> |
-  Symbol |
-  QuoteExpression |
-  CallExpression<e, pe> |
-  Identifier ~id |
-  boolean |
-  Character |
-  Number |
-  String |
-  TripleString |
-  CommandString |
-  PrefixedString |
-  ParenthesizedExpression |
-  TupleExpression |
-  ArrayExpression<e> |
-  ArrayComprehensionExpression<e, pe> |
-  MatrixExpression<e> |
-  GeneratorExpression |
-  TypedExpression<pe> |
-  ParameterizedIdentifier<e, pe> |
-  Operator ~op |
-  BeginIndex |
-  EndIndex
-}
 
 ParameterizedIdentifier<e, pe> {
   pe
@@ -367,8 +382,9 @@ ParameterizedIdentifier<e, pe> {
   TypeArgumentList
 }
 
+type_argument_list { "{" e ("," e)* ","? "}" }
 TypeArgumentList[closedBy="}"] {
-  "{" e ("," e)* ","? "}"
+  type_argument_list
 }
 
 FieldName { word }
@@ -405,7 +421,9 @@ TernaryExpression<e> {
 
 TypePart[@name="Type"] { pe }
 TypedExpression<pe> {
-  pe !typeascription (operator<"::"> | operator<"<:">) !typeascription TypePart
+  pe !typeascription
+  (operator<"::"> | operator<"<:">)
+  !typeascription TypePart
 }
 
 CoefficientExpression[@dynamicPrecedence=5]<e> {
@@ -454,7 +472,7 @@ LonelyType {
 // Quoting and interpolation
 //////////
 
-InterpolationExpression[@dynamicPrecedence=2] {
+InterpolationExpression[@dynamicPrecedence=10] {
   "$" !interp (nowhitespace | immediateParen) pe
 }
 
@@ -462,7 +480,7 @@ Symbol[@dynamicPrecedence=10] {
   ":" !interp (nowhitespace | immediateParen) SymbolName { word }
 }
 
-QuoteExpression[@dynamicPrecedence=2] {
+QuoteExpression[@dynamicPrecedence=10] {
   ":" !interp (nowhitespace | immediateParen) pe
 }
 
@@ -561,17 +579,23 @@ FunctionExpression<e, pe> {
 contains_operator { kw<"in"> | kw<"isa"> }
 colon_operator { ":" }
 
+// So turns out that if I remove all these and use
+// `BinaryExpression<e> { e !plus "$" e }`
+// only, it about halves the time to generate...
+// Just the fact there is so many tokens might overwhelm lezer..
+// Maybe switch to ExternalTokenizer here too?
 BinaryExpression<e> {
-  e !power powerOperator !power e |
-  e !bitshift bitshiftOperator !bitshift e |
-  e !pair pairOperator !pair e |
-  e !colon colon_operator !colon e |
-  e !times timesOperator !times e |
-  e !plus ("$" | plusOperator) !plus e |
+  e !power powerOperator e |
+  e !bitshift bitshiftOperator e |
+  e !pair pairOperator e |
+  e !colon colon_operator e |
+  e !times timesOperator e |
+  e !plus plusOperator e |
+  e !plus_but_sometimes_interpolation "$" e |
   e !arrow arrowOperator e |
   e !pipeback pipe_ltr e |
   e !pipe pipe_rtl e |
-  e !contains (contains_operator | comparisonOperator) !contains e |
+  e !contains (contains_operator | comparisonOperator) e |
   e !bor "||" e |
   e !band "&&" e
 }
@@ -600,12 +624,8 @@ Operator[group="operator"] {
 }
 
 ArrayExpression[closedBy="]"]<e> {
-  !regular0 "[" "]" |
-  !regular0 "["
-  !regular0 e
-  ("," e)*?
-  (!regular0 ",")?
-  !regular0 "]"
+  "[" "]" |
+  "[" e !array ("," e)* (",")? "]"
 }
 
 MatrixExpression[closedBy="]"]<e> {
@@ -619,11 +639,11 @@ MatrixExpression[closedBy="]"]<e> {
 }
 
 MatrixRow<e> {
-  (!regular-1 e)+
+  (!matrix e)+
 }
 
 ArrayComprehensionExpression[closedBy="]"]<e, pe> {
-  "[" !regular0 e !regular0 comprehensionClause<e, pe> "]"
+  "[" !array-comprehension e !array-comprehension comprehensionClause<e, pe> "]"
 }
 
 comprehensionClause<e, pe> {
@@ -651,7 +671,7 @@ ScopedIdentifier {
 // I'm keeping this separate because it needs immediateSingleQuote
 // and because I don't feel like rewriting tests
 TransposeExpression<e> {
-  e !transpose immediateSingleQuote "'"
+  pe !transpose immediateSingleQuote "'"
 }
 
 @skip {} {
@@ -681,8 +701,8 @@ stringInterpolation {
   operator<"$"> immediateParen operator<"("> !regular1 e !regular1 operator<")">
 }
 
-PrefixFieldExpression[@name=FieldEpxression] {
-  PrefixFieldExpression
+PrefixFieldExpression[@name=FieldExpression] {
+  (Identifier | PrefixFieldExpression)
   !immediate immediateDot !dot "." !dot
   FieldName
 }
@@ -725,7 +745,7 @@ boolean { @specialize[@name=BooleanLiteral]<Identifier, "true" | "false"> }
   nowhitespace
 }
 
-terminator { newline | ";" }
+terminator[@export="terminator"] { newline | ";" }
 
 @external tokens newline from "./index.tokens.js" { newline }
 

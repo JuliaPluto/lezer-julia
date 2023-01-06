@@ -140,10 +140,10 @@ SourceFile(
 SourceFile(CoefficientExpression(Number,Coefficient(TupleExpression(Identifier,Identifier))))
 
 
-# BROKEN: FieldExpression in PrefixedString
-module.macro"aaa"
+# FieldExpression in PrefixedString - Thanks Paul (https://github.com/JuliaPluto/lezer-julia/pull/2/files)
+Module.macro"aaa"
 ==>
-SourceFile()
+SourceFile(PrefixedString(Prefix(FieldExpression(Identifier,FieldName)),String))
 
 
 # FieldExpression in Coefficient
