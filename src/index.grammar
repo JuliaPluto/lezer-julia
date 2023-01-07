@@ -51,7 +51,7 @@
 } 
 
 @top SourceFile {
-  expressionList<e, pe> | ""
+  expressionList | ""
 }
 
 // EXPRESSIONS
@@ -97,8 +97,12 @@ pe {
   ParenthesizedExpression |
   TupleExpression |
   ArrayExpression<e> |
+  // TODO Discontinued vector might/is still used by some macros
+  // .... but it also adds a couple of seconds to the build...
+  // DiscontinuedVector |
   ArrayComprehensionExpression<e, pe> |
   MatrixExpression<e> |
+  MatrixExpressionWithOnlySemicolons |
   GeneratorExpression |
   TypedExpression<pe> |
   ParameterizedIdentifier<e, pe>
@@ -109,7 +113,7 @@ pe {
 
 // TOP LEVEL
 
-expressionList<e, pe> {
+expressionList {
   !right0
   terminator*
   !right0
@@ -159,7 +163,7 @@ AssignmentExpression {
 
 blocky_things {
   IfStatement |
-  TryStatement |
+  Try |
   ForStatement |
   WhileStatement |
   LetStatement |
@@ -175,53 +179,77 @@ blocky_things {
   CompoundExpression
 }
 
-IfStatement[closedBy="end else elseif"] {
+// IfStatement but with block matching working...
+// Also creates a less readable tree, so
+// TODO Look into how closedBy and openedBy is
+// .... interpreted by the codemirror extension.
+IfStatement_Pro {
+  blockkw<"if", "else elseif end"> 
+  IfClause { e }
+    expressionList
+  (
+    // TODO Should have openedBy="if elseif" too?
+    blockkw<"elseif", "else elseif end">
+    ElseIfClause { e }
+    expressionList
+  )*
+  (
+    // TODO Should have openedBy "if elseif"?
+    blockkw<"else", "end">
+    ElseClause { expressionList }
+  )?
+  end
+}
+
+IfStatement {
   IfClause { kw<"if"> e }
-    expressionList<e, pe>
+    expressionList
   ElseifClause*
   ElseClause?
   end
 }
-
-ElseifClause[closedBy="end else elseif"] {
+ElseifClause {
   IfClause { kw<"elseif"> e }
-    expressionList<e, pe>
+  expressionList
 }
-
-ElseClause[closedBy="end"] {
+ElseClause {
   kw<"else">
-    expressionList<e, pe>
+  expressionList
 }
 
-TryStatement[closedBy="end catch finally"] {
-  kw<"try">
-    expressionList<e, pe>
-  CatchClause?
-  FinallyClause?
+Try[@name="TryStatement"] {
+  blockkw<"try", "catch finally end">
+  expressionList
+  Catch?
+  Finally?
   end
 }
 
-CatchClause[closedBy="end finally"] {
-  kw<"catch">
+Catch[@name="CatchClause"] {
+  blockkw<"catch", "finally end">
   (CatchBinding { Identifier } | terminator)
-  !regular1
-  expressionList<e, pe>
+  // !regular1
+  expressionList
 }
 
-FinallyClause[closedBy="end"] {
-  kw<"finally">
-    expressionList<e, pe>
+Finally[@name="FinallyClause"] {
+  blockkw<"finally", "end">
+  expressionList
 }
 
-ForStatement[closedBy="end"] {
-  !for-statement kw<"for"> ForBinding<e, pe> ("," ForBinding<e, pe>)*
-    expressionList<e, pe>
+// TODO Should the `in`s be closedBy/openedBy too?
+ForStatement {
+  !for-statement
+  blockkw<"for", "end">
+  ForBinding<e, pe>
+  ("," ForBinding<e, pe>)*
+  expressionList
   end
 }
 
-WhileStatement[closedBy="end"] {
-  !regular0 kw<"while"> !regular0 WhileBinding { e } !regular0
-    expressionList<e, pe>
+WhileStatement {
+  blockkw<"while", "end"> WhileBinding { e }
+    expressionList
   end
 }
 
@@ -237,13 +265,14 @@ ReturnStatement {
   kw<"return"> (!right-2 statement)?
 }
 
-VariableDeclaration {
-  (Identifier | InterpolationExpression) (!right0 "=" e)?
-}
-
-LetStatement[closedBy="end"] {
-  kw<"let"> LetBinding { VariableDeclaration ("," VariableDeclaration)* }? terminator
-    expressionList<e, pe>
+LetStatement {
+  blockkw<"let", "end">
+  LetBinding {
+    (e | AssignmentExpression)
+    ("," (e | AssignmentExpression))*
+  }?
+  terminator
+  expressionList
   end
 }
 
@@ -259,9 +288,9 @@ LocalStatement {
   kw<"local"> statement
 }
 
-QuoteStatement[closedBy="end"] {
-  kw<"quote"> !right-2
-    expressionList<e, pe>
+QuoteStatement {
+  blockkw<"quote", "end">
+  expressionList
   end
 }
 
@@ -270,8 +299,8 @@ QuoteStatement[closedBy="end"] {
 /////////////////
 
 ImportStatement {
-  !right0 (kw<"using"> | kw<"import">)
-  !right0 (Import | SelectedImport)
+  (kw<"using"> | kw<"import">)
+  (Import | SelectedImport)
 }
 
 Import {
@@ -317,18 +346,8 @@ definition {
   FunctionDefinition
 }
 
-Where {
-  e
-  !where
-  kw<"where">
-  TypeParameters {
-    !where e |
-    type_argument_list
-  }
-}
-
-FunctionDefinition[closedBy="end"] {
-  !regular0 kw<"function">
+FunctionDefinition {
+  !regular0 blockkw<"function", "end">
     // Instead of ALL THIS SHIT
     // I could also do `Definition { pe }` and it would work perfectly
     // TODO Still need to make `Where` work in `pe`...
@@ -337,58 +356,58 @@ FunctionDefinition[closedBy="end"] {
       // instead of `Identifier TupleExpression`
       CallExpression[@dynamicPrecedence=9] {
         pe ~function-fix
-        ArgumentList<e, pe>
+        ArgumentList
         ~function-fix
         // ReturnType { "::" pe }?
       } |
       TypedExpression[@dynamicPrecedence=10] {
         CallExpression {
           pe ~function-fix
-          ArgumentList<e, pe>
+          ArgumentList
         }
         ~function-fix
         "::"
         Type { pe }
       } |
       Identifier ~function-fix |
-      ArgumentList<e, pe> ~function-fix
+      ArgumentList ~function-fix
     }
 
     // Where { kw<"where"> TypeParameters { Identifier | TypeArgumentList } }?
     (kw<"where"> TypeParameters { Identifier | type_argument_list })?
-    expressionList<e, pe>
+    expressionList
   end
 }
 Definition { pe }
-MacroDefinition[closedBy="end"] {
-  kw<"macro"> Definition immediateParen ArgumentList<e, pe>
-    expressionList<e, pe>
+MacroDefinition {
+  blockkw<"macro", "end"> Definition immediateParen ArgumentList
+    expressionList
   end
 }
 
-PrimitiveDefinition[closedBy="end"] {
-  kw<"primitive"> kw<"type"> Definition Number end
+PrimitiveDefinition {
+  blockkw<"primitive", "end"> blockkw<"type", "end"> Definition Number end
 }
 
-AbstractDefinition[closedBy="end"] {
-  kw<"abstract"> kw<"type"> Definition end
+AbstractDefinition {
+  blockkw<"abstract", "end"> blockkw<"type", "end"> Definition end
 }
 
-StructDefinition[closedBy="end"] {
-  kw<"mutable">? kw<"struct"> Definition !regular0
-    expressionList<e, pe>
+StructDefinition {
+  blockkw<"mutable", "end">? blockkw<"struct", "end"> Definition !regular0
+    expressionList
   end
 }
 
-ModuleDefinition[closedBy="end"] {
-  kw<"module"> Definition
-    expressionList<e, pe>
+ModuleDefinition {
+  blockkw<"module", "end"> Definition
+    expressionList
   end
 }
 
-BareModuleDefinition[closedBy="end"] {
-  kw<"baremodule"> Definition
-    expressionList<e, pe>
+BareModuleDefinition {
+  blockkw<"baremodule", "end"> Definition
+    expressionList
   end
 }
 
@@ -399,7 +418,7 @@ ParameterizedIdentifier<e, pe> {
 }
 
 type_argument_list { "{" e ("," e)* ","? "}" }
-TypeArgumentList[closedBy="}"] {
+TypeArgumentList {
   type_argument_list
 }
 
@@ -411,7 +430,7 @@ FieldExpression<pe> {
   (FieldName | QuoteExpression | InterpolationExpression)
 }
 
-SubscriptExpression[closedBy="]"]<pe> {
+SubscriptExpression<pe> {
   pe !immediate immediateBracket "["
     (
       ListCompherension |
@@ -441,15 +460,25 @@ TypedExpression<pe> {
   !typeascription TypePart
 }
 
+Where {
+  e
+  !where
+  kw<"where">
+  TypeParameters {
+    !where e |
+    type_argument_list
+  }
+}
+
 CoefficientExpression[@dynamicPrecedence=5]<e> {
   (Number | TransposeExpression<e>)
   !coeff
   (nowhitespace | immediateParen) Coefficient { pe }
 }
 
-CompoundExpression[closedBy="end"] {
+CompoundExpression {
   begin
-    expressionList<e, pe>
+    expressionList
   end
 }
 
@@ -457,17 +486,17 @@ CallExpression<e, pe> {
   pe
   !call BroadcastDot { immediateDot "." }?
   (nowhitespace | immediateParen)
-  !call args[@dynamicPrecedence=1] { ArgumentList<e, pe> }
+  !call [@dynamicPrecedence=1] { ArgumentList }
   DoClause?
 }
 
-DoClause[closedBy="end"] {
-  kw<"do"> 
+DoClause {
+  blockkw<"do", "end"> 
   (
     DoClauseArguments { e ("," e)* } |
     terminator
   )
-  expressionList<e, pe>
+  expressionList
   end
 }
 
@@ -533,7 +562,7 @@ TupleExpression {
   ")"
 }
 // I just ignore `e` and `pe` here lol
-ArgumentList<e, pe> {
+ArgumentList {
   "("
   (
     inner_tuple?
@@ -543,18 +572,34 @@ ArgumentList<e, pe> {
   ")"
 }
 
-// Specific Tuple for when there is just one expression
+// When a tuple has one element `(a)`
+// or only semicolon delimited values `(a;b;c)`
+// or even only semicolons with single dangling commas `(a,;b,;c,)`
+// it is not treated as a tuple, but as an inline block.
+// Thanks to `~tuple-vs-parens` lezer will try both and resort to inline block if it can.
 // (TODO I don't like this exception!!)
-ParenthesizedExpression[closedBy=")", @dynamicPrecedence=1] {
+ParenthesizedExpression[@dynamicPrecedence=1] {
   "("
   (e | AssignmentExpression)
   ~tuple-vs-parens
-  (";" (e | AssignmentExpression) ","?)*
-  ";"?
+  (";"+ (e | AssignmentExpression) ","?)*
+  ";"*
   ")"
 }
-GeneratorExpression[closedBy=")"] {
+GeneratorExpression {
   "(" ListCompherension !single-is-special ")"
+}
+
+// This shouldn't have tuple semantics,
+// but matrix/array semantics!
+DiscontinuedVector {
+  "{"
+  (
+    inner_tuple?
+    ((";")+ Parameters { inner_tuple })*
+    (";")*
+  )?
+  "}"
 }
 
 //////////////
@@ -564,11 +609,9 @@ GeneratorExpression[closedBy=")"] {
 MacroExpression {
   (MacroIdentifier | MacroFieldExpression)
   (
-    immediateParen
-    args[@dynamicPrecedence=1] { ArgumentList<e, pe> }
-    DoClause? | // @use_memo([]) do; ... end
+    immediateParen args[@dynamicPrecedence=10] { ArgumentList } DoClause? | // @use_memo([]) do; ... end
     immediateBrace TypeArgumentList | // @NamedTuple{x::Int}
-    MacroArgumentList<e> // Lame, normal macro call pfffft
+    MacroArgumentList // Lame, normal macro call pfffft
   )?
 }
 
@@ -578,21 +621,23 @@ MacroFieldExpression {
 }
 
 MacroIdentifier {
-  !regular0 "@" MacroName { word | Operator | Operator[group="operator"] { "." } }
+  "@" MacroName { word | Operator | Operator[group="operator"] { "." } }
 }
 
-MacroArgumentList<e> {
+MacroArgumentList {
   (!regular-2 statement)+
 }
 
 FunctionExpression<e, pe> {
-  (ArgumentList { Identifier } | ArgumentList<e, pe>)
+  (ArgumentList { Identifier } | ArgumentList)
   !arrow "->"
   (e | AssignmentExpression)
 }
 
 contains_operator { kw<"in"> | kw<"isa"> }
-colon_operator { ":" }
+// Needs `ternary2` so it can also match ` : `
+// (Else just `a : b` freaks out)
+colon_operator { ":" | ternary2 }
 
 // So turns out that if I remove all these and use
 // `BinaryExpression<e> { e !plus "$" e }`
@@ -636,26 +681,38 @@ Operator[group="operator"] {
   )
 }
 
-ArrayExpression[closedBy="]"]<e> {
+ArrayExpression<e> {
   "[" "]" |
   "[" e !array ("," e)* (",")? "]"
 }
 
-MatrixExpression[closedBy="]"]<e> {
+// I have this defined in tokens as well...
+// Not sure which is better, having the semicolons as one token
+// or as x semicolon tokens.
+// semicolons_without_spaces[@name="Semicolons"] { ";" (nowhitespace ";")* }
+
+MatrixExpression<e> {
   "["
   !regular-1
   MatrixRow<e>
-  (";" MatrixRow<e>)* 
-  (!regular-1 ";")?
+  (semicolons_without_spaces MatrixRow<e>)* 
+  semicolons_without_spaces?
   !regular-1
   "]"
+}
+
+// This is SO STUPID but because I love being extremely complete...
+// Julia allows `[;;;]` but only if there is nothing between the semicolons,
+// no expressions, no commas, no spaces, NO NOTHING
+MatrixExpressionWithOnlySemicolons {
+  "[" semicolons_without_spaces "]"
 }
 
 MatrixRow<e> {
   (!matrix e)+
 }
 
-ArrayComprehensionExpression[closedBy="]"]<e, pe> {
+ArrayComprehensionExpression<e, pe> {
   "[" !array-comprehension e !array-comprehension comprehensionClause<e, pe> "]"
 }
 
@@ -685,13 +742,13 @@ TransposeExpression<e> {
 
 @skip {} {
   String {
-    '"' (stringContent | stringInterpolation)* '"'
+    '"' (stringContent | Interpolation)* '"'
   }
   TripleString {
-    '"""' (tripleStringContent | stringInterpolation)* '"""'
+    '"""' (tripleStringContent | Interpolation)* '"""'
   }
   CommandString {
-    "`" (commandStringContent | stringInterpolation)* "`"
+    "`" (commandStringContent | Interpolation)* "`"
   }
 
   StringWithoutInterpolation[@name="String"] {
@@ -705,7 +762,7 @@ TransposeExpression<e> {
   }
 }
 
-stringInterpolation {
+Interpolation[@name=] {
   operator<"$"> Identifier |
   operator<"$"> immediateParen operator<"("> !regular1 e !regular1 operator<")">
 }
@@ -718,10 +775,11 @@ PrefixFieldExpression[@name=FieldExpression] {
 PrefixedString {
   Prefix { Identifier | PrefixFieldExpression }
   !immediate
-  
-  (immediateDoubleQuote StringWithoutInterpolation |
-  immediateDoubleQuote TripleStringWithoutInterpolation |
-  immediateBackquote CommandStringWithoutInterpolation)
+  (
+    immediateDoubleQuote StringWithoutInterpolation |
+    immediateDoubleQuote TripleStringWithoutInterpolation |
+    immediateBackquote CommandStringWithoutInterpolation
+  )
 }
 
 plusOperator {
@@ -730,17 +788,17 @@ plusOperator {
 }
 
 operator<term> { [@name={term},group="operator"]{ term } } 
+kw<term> { @specialize[@name={term},group="keyword"]<Identifier, term> }
+blockkw<term, cc> { @specialize[@name={term},closedBy={cc}, group="keyword"]<Identifier, term> }
+boolean { @specialize[@name=BooleanLiteral]<Identifier, "true" | "false"> }
 
 @context trackIsIndexing from "./begindexing.tokens.js"
 @external specialize {Identifier} begin_end_but_cool from "./begindexing.tokens.js" {
-  begin[@name="begin"]
+  begin[@name="begin", group="keyword", closedBy="end"]
   BeginIndex
-  end[@name="end"]
+  end[@name="end", group="keyword", openedBy="begin if else elseif let try catch finally for while function struct macro module baremodule struct abstract primitive type do"]
   EndIndex
 }
-
-kw<term> { @specialize[@name={term},group="keyword"]<Identifier, term> }
-boolean { @specialize[@name=BooleanLiteral]<Identifier, "true" | "false"> }
 
 @external tokens layoutExtra from "./index.tokens.js" {
   immediateParen,
@@ -766,6 +824,7 @@ terminator[@export="terminator"] { newline | ";" }
 @external tokens Identifier from "./index.tokens.js" { Identifier }
 
 @external tokens BlockComment from "./index.tokens.js" { BlockComment }
+
 @external tokens tripleStringContent from "./index.tokens.js" { tripleStringContent }
 @external tokens stringContent from "./index.tokens.js" { stringContent }
 @external tokens commandStringContent from "./index.tokens.js" { commandStringContent }
@@ -776,6 +835,25 @@ terminator[@export="terminator"] { newline | ";" }
 @tokens {
   "["[@export="BracketL"] 
   "]"[@export="BracketR"] 
+
+  // Can implement strings in pure-lezer too?
+  // Still have this commented out because feels odd that it works...
+  // Also fixed the ExternalTokenizer so no need to fix this yet.
+  // @precedence {
+  //   "$"
+  //   "\"\"\""
+  //   stringContent
+  //   tripleStringContent
+  // }
+  // stringContent {
+  //   (![\\"$] | "\\" _ | "$" @whitespace)+
+  // }
+  // tripleStringContent {
+  //   (![\\"$] | "\\" _ | "$" @whitespace | "\"" ![\\"$] | "\"" "\"" ![\\"$])+
+  // }
+  // stringContentWithoutInterpolation {
+  //   (![\\"] | "\\" _)+
+  // }
 
   whitespace {
     " " | "\t" | "\n"
@@ -828,23 +906,26 @@ terminator[@export="terminator"] { newline | ";" }
   pipe_ltr[@name="pipe<"] { "<|" | ".<|" }
   pipe_rtl[@name="pipe>"] { "|>" | ".|>" }
 
+  // semicolons_without_spaces[@name="Semicolons"] { ";"+ }
+  semicolons_without_spaces { ";"+ }
+  
   ternary1 {
     whitespace+ "?" whitespace+
   }
   ternary2 {
     whitespace+ ":" whitespace+
   }
-  @precedence {
+  @precedence {    
     Number,
     pipe_ltr,
     pipe_rtl,
     // <: and < will fight over two should be chosen,
     // and if possible it should always be <: (not gonna have a range expression with `<` sadly)
     "<:",
+    unaryOperatorExtra
     comparisonOperator,
     "=",
     assignOperator,
-    unaryOperatorExtra,
     plusOperatorExtra,
     ".",
     ternary1,
@@ -852,3 +933,5 @@ terminator[@export="terminator"] { newline | ";" }
     whitespace
   }
 }
+
+@external propSource juliaHighlighting from "./highlight.js"

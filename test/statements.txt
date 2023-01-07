@@ -142,9 +142,9 @@ end
 SourceFile(
   LetStatement(let,
     LetBinding(
-      VariableDeclaration(Identifier,Identifier),
-      VariableDeclaration(Identifier),
-      VariableDeclaration(Identifier,Identifier),
+      AssignmentExpression(Identifier,Identifier),
+      Identifier,
+      AssignmentExpression(Identifier,Identifier),
     ),
     Identifier,
     end
