@@ -265,15 +265,15 @@ abstract type name{param} <: supertype end
 ==>
 
 SourceFile(
-  AbstractDefinition(abstract,type,Definition(Identifier),end),
-  AbstractDefinition(abstract,type,Definition(Identifier),end),
+  AbstractDefinition(abstract_type,Definition(Identifier),end),
+  AbstractDefinition(abstract_type,Definition(Identifier),end),
   AbstractDefinition(
-    abstract,type,
+    abstract_type,
     Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier))),
     end
   ),
   AbstractDefinition(
-    abstract,type,
+    abstract_type,
     Definition(TypedExpression(
       ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier))
       Type(Identifier)
@@ -296,14 +296,14 @@ abstract type name{a, a<:b,} end
 ==>
 
 SourceFile(
-  AbstractDefinition(abstract,type,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier))),end),
-  AbstractDefinition(abstract,type,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier,Identifier))),end),
-  AbstractDefinition(abstract,type,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier))),end),
-  AbstractDefinition(abstract,type,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier,Identifier))),end),
-  AbstractDefinition(abstract,type,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(TypedExpression(Identifier,Type(Identifier))))),end),
-  AbstractDefinition(abstract,type,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(TypedExpression(Identifier,Type(Identifier))))),end),
-  AbstractDefinition(abstract,type,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier,TypedExpression(Identifier,Type(Identifier))))),end),
-  AbstractDefinition(abstract,type,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier,TypedExpression(Identifier,Type(Identifier))))),end))
+  AbstractDefinition(abstract_type,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier))),end),
+  AbstractDefinition(abstract_type,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier,Identifier))),end),
+  AbstractDefinition(abstract_type,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier))),end),
+  AbstractDefinition(abstract_type,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier,Identifier))),end),
+  AbstractDefinition(abstract_type,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(TypedExpression(Identifier,Type(Identifier))))),end),
+  AbstractDefinition(abstract_type,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(TypedExpression(Identifier,Type(Identifier))))),end),
+  AbstractDefinition(abstract_type,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier,TypedExpression(Identifier,Type(Identifier))))),end),
+  AbstractDefinition(abstract_type,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier,TypedExpression(Identifier,Type(Identifier))))),end))
 
 # PrimitiveDefinition
 
@@ -317,15 +317,15 @@ primitive type name{param} <: supertype 42 end
 ==>
 
 SourceFile(
-  PrimitiveDefinition(primitive,type,Definition(Identifier),Number,end),
-  PrimitiveDefinition(primitive,type,Definition(Identifier),Number,end),
+  PrimitiveDefinition(primitive_type,Definition(Identifier),Number,end),
+  PrimitiveDefinition(primitive_type,Definition(Identifier),Number,end),
   PrimitiveDefinition(
-    primitive,type,
+    primitive_type,
     Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier))),
     Number,end
   ),
   PrimitiveDefinition(
-    primitive,type,
+    primitive_type,
     Definition(TypedExpression(
       ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier)),
       Type(Identifier)
@@ -362,7 +362,7 @@ SourceFile(
   StructDefinition(struct,Definition(TypedExpression(ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier)),Type(Identifier))),end),
   StructDefinition(struct,Definition(Identifier),Identifier,end),
   StructDefinition(struct,Definition(Identifier),Identifier,Identifier,end),
-  StructDefinition(mutable,struct,Definition(Identifier),end),
+  MutableStructDefinition(mutable_struct,Definition(Identifier),end),
 )
 
 # ModuleDefinition

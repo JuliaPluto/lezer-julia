@@ -65,17 +65,17 @@ end
 SourceFile(
   Comment,
   PrimitiveDefinition(
-    primitive,type,
+    primitive_type,
     Definition(Identifier),
     Number,
     end),
   PrimitiveDefinition(
-    primitive,type,
+    primitive_type,
     Definition(TypedExpression(Identifier, Type(Identifier))),
     Number,
     end),
   PrimitiveDefinition(
-    primitive,type,
+    primitive_type,
     Definition(ParameterizedIdentifier(
       Identifier,
       TypeArgumentList(Identifier),
@@ -84,15 +84,15 @@ SourceFile(
     end),
   Comment,
   AbstractDefinition(
-    abstract,type,
+    abstract_type,
     Definition(Identifier),
     end),
   AbstractDefinition(
-    abstract,type,
+    abstract_type,
     Definition(TypedExpression(Identifier,Type(Identifier))),
     end),
   AbstractDefinition(
-    abstract,type,
+    abstract_type,
     Definition(TypedExpression(
       ParameterizedIdentifier(
         Identifier,
@@ -107,8 +107,8 @@ SourceFile(
     Definition(Identifier),
     end),
   Comment,
-  StructDefinition(
-    mutable,struct,
+  MutableStructDefinition(
+    mutable_struct,
     Definition(Identifier),
     Identifier,
     TypedExpression(Identifier,Type(Identifier)),
@@ -138,8 +138,8 @@ SourceFile(
     TypedExpression(Identifier,"::",Type(Identifier)),
     end),
   Comment,
-  StructDefinition(
-    mutable,struct,
+  MutableStructDefinition(
+    mutable_struct,
     Definition(TypedExpression(
       Identifier,
       Type(Identifier),

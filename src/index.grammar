@@ -41,6 +41,7 @@
   plus_but_sometimes_interpolation @right
 
   for-statement
+  statement @right
   
   regular1
   right0 @right
@@ -114,15 +115,15 @@ pe {
 // TOP LEVEL
 
 expressionList {
-  !right0
+  !statement
   terminator*
-  !right0
+  !statement
   statement?
   (
-    !right0 terminator+
-    (!right0 statement)
+    !statement terminator+
+    (!statement statement)
   )*
-  terminator* !right0
+  terminator* !statement
 }
 
 // AssignmentStatement and BareTuple are the only
@@ -340,6 +341,7 @@ definition {
   PrimitiveDefinition |
   AbstractDefinition |
   StructDefinition |
+  MutableStructDefinition |
   ModuleDefinition |
   BareModuleDefinition |
   MacroDefinition |
@@ -386,18 +388,24 @@ MacroDefinition {
 }
 
 PrimitiveDefinition {
-  blockkw<"primitive", "end"> blockkw<"type", "end"> Definition Number end
+   "primitive type" Definition Number end
 }
 
 AbstractDefinition {
-  blockkw<"abstract", "end"> blockkw<"type", "end"> Definition end
+  "abstract type" Definition end
 }
 
 StructDefinition {
-  blockkw<"mutable", "end">? blockkw<"struct", "end"> Definition !regular0
+  blockkw<"struct", "end"> Definition !regular0
     expressionList
   end
 }
+MutableStructDefinition {
+  "mutable struct" Definition !regular0
+    expressionList
+  end
+}
+
 
 ModuleDefinition {
   blockkw<"module", "end"> Definition
@@ -514,24 +522,40 @@ LonelyType {
 //////////
 
 InterpolationExpression[@dynamicPrecedence=10] {
+  InterpolationStart e InterpolationEnd |
+  // TODO Make this "$" also InterpolationStart?
   "$" !interp (nowhitespace | immediateParen) pe
 }
 
-Symbol[@dynamicPrecedence=10] {
+Symbol[@dynamicPrecedence=8] {
+  // TODO Make this ":" also QuoteStart?
   ":" !interp (nowhitespace | immediateParen)
-  // So assign operators are special because you can't use them as
-  // normal identifiers e.g. `+` is valid code, `+=` isn't, while `:+=` is!
-  SymbolName { word | Operator { assignOperator } }
+  SymbolName {
+    // The reason Symbol and QuoteExpression can co-exist is because
+    // Symbol matches on `word`, which is just like identifier BUT
+    // will match earlier... so Symbol will "snatch" all the
+    // wordy symbols right from QuoteNode...
+    // TODO Don't think this distinction is useful though
+    word |
+    // So assign operators are special because you can't use them as
+    // normal identifiers e.g. `+` is valid code, `+=` isn't, while `:+=` is!
+    Operator { assignOperator }
+    // TODO Allow all operators here explicitly so they get tagged as
+    // .... Symbol rather than QuoteExpression (if we keep the distinction)
+  }
 }
 
-QuoteExpression[@dynamicPrecedence=9] {
-  ":" !interp (nowhitespace | immediateParen)
-  // And the most exceptional is `=`, because you can't even do `:=`,
-  // you have to do `:(=)` to get an equals symbol.
+QuoteExpression[@dynamicPrecedence=10] {
+  QuoteStart
   (
-    pe |
-    "(" ParenthesizedExpression { Operator { assignOperator | "=" } } ")"
+    e |
+    // And the most exceptional is `=`, because you can't even do `:=`,
+    // you have to do `:(=)` to get an equals symbol.
+    Operator { assignOperator | "=" }
   )
+  QuoteEnd |
+  // TODO Make this ":" also QuoteStart?
+  ":" !interp (nowhitespace | immediateParen) pe
 }
 
 
@@ -764,7 +788,7 @@ TransposeExpression<e> {
 
 Interpolation[@name=] {
   operator<"$"> Identifier |
-  operator<"$"> immediateParen operator<"("> !regular1 e !regular1 operator<")">
+  InterpolationStart e InterpolationEnd
 }
 
 PrefixFieldExpression[@name=FieldExpression] {
@@ -796,7 +820,7 @@ boolean { @specialize[@name=BooleanLiteral]<Identifier, "true" | "false"> }
 @external specialize {Identifier} begin_end_but_cool from "./begindexing.tokens.js" {
   begin[@name="begin", group="keyword", closedBy="end"]
   BeginIndex
-  end[@name="end", group="keyword", openedBy="begin if else elseif let try catch finally for while function struct macro module baremodule struct abstract primitive type do"]
+  end[@name="end", group="keyword", openedBy="quote begin if else elseif let try catch finally for while do function struct macro module baremodule struct mutable_struct abstract_type primitive_type"]
   EndIndex
 }
 
@@ -815,13 +839,6 @@ boolean { @specialize[@name=BooleanLiteral]<Identifier, "true" | "false"> }
 terminator[@export="terminator"] { newline | ";" }
 
 @external tokens newline from "./index.tokens.js" { newline }
-
-// So this is a tricky one... to have `word` for fieldnames and symbols
-// but `Identifier` for Identifiers *and keywords*, I now have two tokens that are generated the same way...
-// The trick is having `word` earlier in this list, so when it has to chose between `word` or `Identifier`,
-// it will always take the `word` first.
-@external tokens word from "./index.tokens.js" { word }
-@external tokens Identifier from "./index.tokens.js" { Identifier }
 
 @external tokens BlockComment from "./index.tokens.js" { BlockComment }
 
@@ -915,11 +932,26 @@ terminator[@export="terminator"] { newline | ";" }
   ternary2 {
     whitespace+ ":" whitespace+
   }
-  @precedence {    
+
+  // TODO Uncomment this so these will actually show up
+  // .... in the tree and not be hidden blegh
+  // "(" ")" "{" "}" "[" "]" ";" ","
+
+  "abstract type"[@name="abstract_type", group="keyword", closedBy="end"]
+  "primitive type"[@name="primitive_type", group="keyword", closedBy="end"]
+  "mutable struct"[@name="mutable_struct", group="keyword", closedBy="end"]
+
+  QuoteStart[closedBy=QuoteEnd] { ":(" }
+  QuoteEnd[openedBy=QuoteStart] { ")" }
+
+  InterpolationStart[closedBy=InterpolationEnd] { "$(" }
+  InterpolationEnd[openedBy=InterpolationStart] { ")" }
+  
+  @precedence {
     Number,
     pipe_ltr,
     pipe_rtl,
-    // <: and < will fight over two should be chosen,
+    // <: and < will fight over who should be chosen,
     // and if possible it should always be <: (not gonna have a range expression with `<` sadly)
     "<:",
     unaryOperatorExtra
@@ -933,5 +965,13 @@ terminator[@export="terminator"] { newline | ";" }
     whitespace
   }
 }
+
+// So this is a tricky one... to have `word` for fieldnames and symbols
+// but `Identifier` for Identifiers *and keywords*, I now have two tokens that are generated the same way...
+// The trick is having `word` earlier in this list, so when it has to chose between `word` or `Identifier`,
+// it will always take the `word` first.
+@external tokens word from "./index.tokens.js" { word }
+@external tokens Identifier from "./index.tokens.js" { Identifier }
+
 
 @external propSource juliaHighlighting from "./highlight.js"
