@@ -250,7 +250,14 @@ const makeStringContent = ({ till, term }) => {
     let eatNext = false;
     while (true) {
       let c = input.peek(offset);
-      if (c === -1) break;
+      if (c === -1) {
+        // EOF, but I still accept a token for better error recovery
+        // (will make `"aaa` treat `aaa` as a string content)
+        if (offset > 0) {
+          input.acceptToken(term, offset);
+        }
+        return;
+      }
       if (eatNext) {
         eatNext = false;
       } else if (c === CHAR_BACKSLASH) {
