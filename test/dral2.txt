@@ -85,7 +85,7 @@ end
 SourceFile(FunctionDefinition(function,Definition(CallExpression(Identifier,ArgumentList(
   TypedExpression(Identifier,"::",Type(Identifier)),
   Parameters(
-    AssignmentExpression(TypedExpression(Identifier,"::",Type(Identifier)),Symbol(SymbolName)),
+    AssignmentExpression(TypedExpression(Identifier,"::",Type(Identifier)),Symbol(Identifier)),
     AssignmentExpression(TypedExpression(Identifier,"::",Type(Identifier)),Identifier),
     AssignmentExpression(TypedExpression(Identifier,"::",Type(ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier)))),Identifier),
     AssignmentExpression(TypedExpression(Identifier,"::",Type(ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier)))),Identifier),

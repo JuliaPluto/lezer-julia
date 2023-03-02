@@ -244,45 +244,50 @@ using Printf: @sprintf as @format
 ==>
 
 SourceFile(
-  ImportStatement(using,
-    Import(Identifier)),
-  ImportStatement(using,
-    SelectedImport(Identifier,Identifier,Identifier)),
-  ImportStatement(import,
-    Import(ScopedIdentifier(Identifier,Identifier))),
-  ImportStatement(import,
+  ImportStatement(
+    using,
+    Imports(Import(Identifier))
+  ),
+  ImportStatement(
+    using,
     SelectedImport(
-      ScopedIdentifier(Identifier),
-      MacroIdentifier(MacroName)
+      Import(Identifier),
+      Imports(Import(Identifier),",",Import(Identifier))
     )
   ),
-  ImportStatement(using,
-    Import(Identifier,Identifier,Identifier)
+  ImportStatement(
+    import,
+    Imports(
+      Import(Identifier,Property(".",Identifier))
+    )
   ),
-  ImportStatement(import,
-    Import(RenamedIdentifier(Identifier,as,Identifier))
+  ImportStatement(
+    import,
+    SelectedImport(
+      Import(".",Identifier),
+      Imports(
+        Import(MacroIdentifier(MacroName))
+      )
+    )
   ),
-  ImportStatement(import,
-    Import(RenamedIdentifier(ScopedIdentifier(Identifier,Identifier),as,Identifier))
+  ImportStatement(
+    using,
+    Imports(
+      Import(Identifier),
+      ",",
+      Import(Identifier),
+      ",",
+      Import(Identifier)
+    )
   ),
-  ImportStatement(import,
-    SelectedImport(Identifier,RenamedImport(Identifier,as,Identifier)),
-  ),
-  ImportStatement(import,
-    SelectedImport(Identifier,RenamedImport(Identifier,as,Identifier),RenamedImport(Identifier,as,Identifier),Identifier),
-  ),
-  ImportStatement(using,
-    SelectedImport(Identifier,RenamedImport(Identifier,as,Identifier)),
-  ),
-  ImportStatement(import,
-    SelectedImport(Identifier,RenamedImport(ScopedIdentifier(Identifier,Identifier),as,Identifier))
-  ),
-  ImportStatement(import,
-    SelectedImport(Identifier,RenamedImport(Operator,as,Operator)),
-  ),
-  ImportStatement(using,
-    SelectedImport(Identifier,RenamedImport(MacroIdentifier(MacroName),as,MacroIdentifier(MacroName)))
-  )
+  ImportStatement(import,Imports(Import(Identifier,Rename(as,Identifier)))),
+  ImportStatement(import,Imports(Import(Identifier,Property(".",Identifier),Rename(as,Identifier)))),
+  ImportStatement(import,SelectedImport(Import(Identifier),Imports(Import(Identifier,Rename(as,Identifier))))),
+  ImportStatement(import,SelectedImport(Import(Identifier),Imports(Import(Identifier,Rename(as,Identifier)),",",Import(Identifier,Rename(as,Identifier)),",",Import(Identifier)))),
+  ImportStatement(using,SelectedImport(Import(Identifier),Imports(Import(Identifier,Rename(as,Identifier))))),
+  ImportStatement(import,SelectedImport(Import(Identifier),Imports(Import(Identifier,Property(".",Identifier),Rename(as,Identifier))))),
+  ImportStatement(import,SelectedImport(Import(Identifier),Imports(Import(Operator,Rename(as,Operator))))),
+  ImportStatement(using,SelectedImport(Import(Identifier),Imports(Import(MacroIdentifier(MacroName),Rename(as,MacroIdentifier(MacroName))))))
 )
 
 # Export statements

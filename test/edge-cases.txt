@@ -155,8 +155,8 @@ end
 ==>
 
 SourceFile(
-  FunctionDefinition(function,Definition(ArgumentList),end),
-  FunctionDefinition(function,Definition(ArgumentList),end),
+  FunctionDefinition(function,Definition(TupleExpression),end),
+  FunctionDefinition(function,Definition(TupleExpression),end),
 )
 
 # FunctionDefinition_no_parens_ok
@@ -405,9 +405,9 @@ end
 ==>
 
 SourceFile(
-  MacroDefinition(macro,Definition(Identifier),ArgumentList,end),
-  MacroDefinition(macro,Definition(Identifier),ArgumentList,end),
-  MacroDefinition(macro,Definition(Identifier),ArgumentList,Identifier,end),
+  MacroDefinition(macro,Definition(CallExpression(Identifier,ArgumentList)),end),
+  MacroDefinition(macro,Definition(CallExpression(Identifier,ArgumentList)),end),
+  MacroDefinition(macro,Definition(CallExpression(Identifier,ArgumentList)),Identifier,end)
 )
 
 # MacroDefinition_complexHead_ok
@@ -419,8 +419,7 @@ macro Base.union() end
 SourceFile(
   MacroDefinition(
     macro,
-    Definition(FieldExpression(Identifier,FieldName)),
-    ArgumentList,
+    Definition(CallExpression(FieldExpression(Identifier,FieldName), ArgumentList)),
     end
   )
 )
@@ -464,7 +463,7 @@ SourceFile(
         )
       ),
       where,
-      TypeParameters(Identifier)
+      Type(TypeArgumentList(Identifier))
     ),
     Identifier
   )
@@ -478,7 +477,7 @@ SourceFile(
 
 SourceFile(
   FunctionExpression(
-    ArgumentList(Identifier,Identifier),
+    ArgumentList(TupleExpression(Identifier,Identifier)),
     BinaryExpression(Identifier,Identifier),
   )
 )
@@ -490,7 +489,7 @@ SourceFile(
 ==>
 
 SourceFile(
-  Symbol(SymbolName),
+  Symbol(Identifier),
 )
 
 # QuoteExpression_2
@@ -500,7 +499,7 @@ SourceFile(
 ==>
 
 SourceFile(
-  QuoteExpression(ParenthesizedExpression(BinaryExpression(Identifier,Identifier))),
+  Quote(BinaryExpression(Identifier,Identifier)),
 )
 
 # QuoteExpression_3
@@ -515,8 +514,8 @@ SourceFile(
   QuoteStatement(
     quote,
     BinaryExpression(
-      InterpolationExpression(Identifier),
-      InterpolationExpression(Identifier)
+      Interpolation(Identifier),
+      Interpolation(Identifier)
     ),
     end
   )
@@ -530,8 +529,8 @@ SourceFile(
 
 SourceFile(
   BinaryExpression(
-    Symbol(SymbolName),
-    Symbol(SymbolName),
+    Symbol(Identifier),
+    Symbol(Identifier),
   )
 )
 
@@ -739,8 +738,8 @@ SourceFile(
 ==>
 
 SourceFile(
-  FunctionExpression(ArgumentList(Identifier,Identifier),BinaryExpression(Identifier,Identifier)),
-  FunctionExpression(ArgumentList(Identifier),Identifier),
+  FunctionExpression(ArgumentList(TupleExpression(Identifier,Identifier)),BinaryExpression(Identifier,Identifier)),
+  FunctionExpression(ArgumentList(TupleExpression(Identifier)),Identifier),
 )
 
 # RangeExpression_ok
@@ -759,7 +758,7 @@ $x(1, 2)
 
 SourceFile(
   CallExpression(
-    InterpolationExpression(Identifier),
+    Interpolation(Identifier),
     ArgumentList(Number,Number)
   )
 )
@@ -787,7 +786,7 @@ import Module: ==, +
 SourceFile(
   ImportStatement(
     import,
-    SelectedImport(Identifier,Operator,Operator)
+    SelectedImport(Import(Identifier),Imports(Import(Operator),Import(Operator)))
   )
 )
 
@@ -873,11 +872,11 @@ local $(x) = 1
 SourceFile(
   LocalStatement(
     local,
-    AssignmentExpression(InterpolationExpression(Identifier),Number)
+    AssignmentExpression(Interpolation(Identifier),Number)
   ),
   LocalStatement(
     local,
-    AssignmentExpression(InterpolationExpression(ParenthesizedExpression(Identifier)),Number)
+    AssignmentExpression(Interpolation(Identifier),Number)
   )
 )
 
@@ -890,7 +889,7 @@ Base.:(==)
 SourceFile(
   FieldExpression(
     Identifier,
-    QuoteExpression(ParenthesizedExpression(Operator))
+    Quote(Operator)
   )
 )
 
@@ -903,7 +902,7 @@ import ..Ok
 SourceFile(
   ImportStatement(
     import,
-    Import(ScopedIdentifier(ScopedIdentifier(Identifier)))
+    Imports(Import(".", ".", Identifier))
   )
 )
 
@@ -915,6 +914,6 @@ SourceFile(
 ==>
 
 SourceFile(
-  QuoteExpression(ParenthesizedExpression(Operator)),
-  QuoteExpression(ParenthesizedExpression(Operator)),
+  Quote(Operator),
+  Quote(Operator),
 )

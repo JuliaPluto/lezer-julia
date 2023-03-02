@@ -34,8 +34,8 @@ f \$name"
 
 SourceFile(
   String,
-  String(Identifier),
-  String(BinaryExpression(Identifier,Identifier)),
+  String(Interpolation(Identifier)),
+  String(Interpolation(BinaryExpression(Identifier,Identifier))),
   String,
   String,
   String,
@@ -53,8 +53,8 @@ a "quoted" string"""
 
 SourceFile(
   TripleString,
-  TripleString(Identifier),
-  TripleString(BinaryExpression(Identifier,Identifier)),
+  TripleString(Interpolation(Identifier)),
+  TripleString(Interpolation(BinaryExpression(Identifier,Identifier))),
   TripleString,
 )
 
@@ -71,8 +71,8 @@ SourceFile(
 SourceFile(
   CommandString,
   CommandString,
-  CommandString(Identifier),
-  CommandString(BinaryExpression(Identifier, Identifier)),
+  CommandString(Interpolation(Identifier)),
+  CommandString(Interpolation(BinaryExpression(Identifier, Identifier))),
   CommandString,
 )
 
@@ -202,11 +202,13 @@ end
 SourceFile(
   CallExpression(
     Identifier,
-    ArgumentList(Identifier),
-    DoClause(
-      do,
-      CallExpression(Identifier,ArgumentList(Identifier)),
-      end
+    ArgumentList(
+      Identifier,
+      DoClause(
+        do,
+        CallExpression(Identifier,ArgumentList(Identifier)),
+        end
+      )
     )
   )
 )
@@ -328,7 +330,9 @@ SourceFile(
   UnaryExpression(Operator, Identifier),
   UnaryExpression(Operator, Number),
   TransposeExpression(ArrayExpression(Identifier)),
-  UnaryExpression(Operator, ParenthesizedExpression(BinaryExpression(Identifier,Identifier))),
+  CallExpression(Operator, ArgumentList(
+    BinaryExpression(Identifier,Identifier)
+  )),
 )
 
 # The ternary operator
@@ -395,50 +399,8 @@ SourceFile(
 
 ==>
 
-SourceFile(
-  BinaryExpression(
-    BinaryExpression(
-      BinaryExpression(
-        CoefficientExpression(Number, Coefficient(Identifier)),
-        Number
-      ),
-      CoefficientExpression(Number, Coefficient(Identifier))
-    ),
-    Number
-  ),
-  BinaryExpression(
-    BinaryExpression(
-      BinaryExpression(
-        CoefficientExpression(Number, Coefficient(Identifier)),
-        Number
-      ),
-      CoefficientExpression(Number, Coefficient(Identifier))
-    ),
-    Number
-  ),
-  BinaryExpression(
-    Number,
-    CoefficientExpression(Number, Coefficient(Identifier))
-  ),
-  BinaryExpression(
-    BinaryExpression(
-      BinaryExpression(
-        CoefficientExpression(
-          Number,
-          Coefficient(ParenthesizedExpression(BinaryExpression(Identifier,Number)))
-        ),
-        Number
-      ),
-      CoefficientExpression(
-        Number,
-        Coefficient(ParenthesizedExpression(
-          BinaryExpression(Identifier,Number)
-        ))
-      )
-    ),
-    Number
-  )
-)
+SourceFile(BinaryExpression(BinaryExpression(CoefficientExpression(Number,Coefficient(BinaryExpression(Identifier,Number))),CoefficientExpression(Number,Coefficient(Identifier))),Number),BinaryExpression(BinaryExpression(CoefficientExpression(Number,Coefficient(BinaryExpression(Identifier,Number))),CoefficientExpression(Number,Coefficient(Identifier))),Number),BinaryExpression(Number,CoefficientExpression(Number,Coefficient(Identifier))),BinaryExpression(BinaryExpression(CoefficientExpression(Number,Coefficient(BinaryExpression(ParenthesizedExpression("(",BinaryExpression(Identifier,Number),")"),Number))),CoefficientExpression(Number,Coefficient(ParenthesizedExpression("(",BinaryExpression(Identifier,Number),")")))),Number))
+
 
 # Tuples
 
@@ -537,7 +499,7 @@ SourceFile(
     BinaryExpression(Identifier,Number)
   ),
   FunctionExpression(
-    ArgumentList(Identifier,Identifier,Identifier),
+    ArgumentList(TupleExpression(Identifier,Identifier,Identifier)),
     BinaryExpression(
       BinaryExpression(
         CoefficientExpression(Number,Coefficient(Identifier)),
@@ -546,10 +508,10 @@ SourceFile(
       Identifier
     )
   ),
-  FunctionExpression(ArgumentList,Number),
-  FunctionDefinition(function,Definition(ArgumentList),Number,end),
+  FunctionExpression(ArgumentList(TupleExpression),Number),
+  FunctionDefinition(function,Definition(TupleExpression),Number,end),
   FunctionExpression(
-    ArgumentList,
+    ArgumentList(TupleExpression),
     ParenthesizedExpression(
       CallExpression(Identifier,ArgumentList(Number)),
       AssignmentExpression(Identifier,Number),

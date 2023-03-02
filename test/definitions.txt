@@ -218,49 +218,47 @@ end
 SourceFile(
   MacroDefinition(
     macro,
-    Definition(Identifier),
-    ArgumentList(Identifier,AssignmentExpression(Identifier,Identifier)),
+    Definition(
+      CallExpression(
+        Identifier,
+        ArgumentList(Identifier,AssignmentExpression(Identifier,Identifier))
+      )
+    ),
     AssignmentExpression(
       Identifier,
       ArrayExpression(
-        QuoteExpression(
+        Quote(
           TupleExpression(
-            InterpolationExpression(
-              ParenthesizedExpression(
-                SpreadExpression(
-                  CallExpression(
+            Interpolation(
+              "$(",
+              SpreadExpression(
+                CallExpression(
+                  Identifier,
+                  ArgumentList(
                     Identifier,
-                    ArgumentList(
-                      Identifier,
-                      FieldExpression(Identifier,FieldName)
-                    )
+                    FieldExpression(Identifier,FieldName)
                   )
                 )
-              )
+              ),
+              ")"
             )
           )
         )
       )
     ),
-    QuoteExpression(
-      ParenthesizedExpression(
-        CallExpression(
-          Identifier,
-          ArgumentList(
-            MacroExpression(MacroIdentifier(MacroName)),
-            InterpolationExpression(
-              ParenthesizedExpression(
-                CallExpression(
-                  Identifier,
-                  ArgumentList(Identifier)
-                )
-              )
-            ),
-            InterpolationExpression(
-              ParenthesizedExpression(
-                SpreadExpression(Identifier)
-              )
+    Quote(
+      CallExpression(
+        Identifier,
+        ArgumentList(
+          MacroExpression(MacroIdentifier(MacroName)),
+          Interpolation(
+            CallExpression(
+              Identifier,
+              ArgumentList(Identifier)
             )
+          ),
+          Interpolation(
+            SpreadExpression(Identifier)
           )
         )
       )

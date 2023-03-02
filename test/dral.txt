@@ -11,7 +11,7 @@ SourceFile(
 # Tuple parameters
 function (x; y) end
 ==>
-SourceFile(FunctionDefinition(function,Definition(ArgumentList(Identifier,Parameters(Identifier))),end))
+SourceFile(FunctionDefinition(function,Definition(ParenthesizedExpression(Identifier,Identifier)),end))
 
 
 # Named tuple with `;`
@@ -56,7 +56,20 @@ SourceFile(
 # Typed do
 f() do x::Int; end
 ==>
-SourceFile(CallExpression(Identifier,ArgumentList,DoClause(do,DoClauseArguments(TypedExpression(Identifier,"::",Type(Identifier))),end)))
+SourceFile(
+  CallExpression(
+    Identifier,
+    ArgumentList(
+      DoClause(
+        do,
+        DoClauseArguments(
+          TypedExpression(Identifier,"::",Type(Identifier))
+        ),
+        end
+      )
+    )
+  )
+)
 
 
 # FunctionExpression with assignment
@@ -108,13 +121,13 @@ SourceFile(CallExpression(
 # No argument do
 f() do; end
 ==>
-SourceFile(CallExpression(Identifier,ArgumentList,DoClause(do,end)))
+SourceFile(CallExpression(Identifier,ArgumentList(DoClause(do,end))))
 
 
 # One argument do
 f() do x x end
 ==>
-SourceFile(CallExpression(Identifier,ArgumentList,DoClause(do,DoClauseArguments(Identifier),Identifier,end)))
+SourceFile(CallExpression(Identifier,ArgumentList(DoClause(do,DoClauseArguments(Identifier),Identifier,end))))
 
 
 # Function with return type
@@ -141,13 +154,15 @@ SourceFile(
   FunctionDefinition(
     function,
     Definition(
-      TypedExpression(
-        CallExpression(Identifier, ArgumentList),
-        Type(Identifier),
-      )
+      Where(
+        TypedExpression(
+          CallExpression(Identifier, ArgumentList),
+          Type(Identifier),
+        )
+        where,
+        Type(Identifier)
+      ),
     ),
-    where,
-    TypeParameters(Identifier),
     end
   )
 )
@@ -155,7 +170,7 @@ SourceFile(
 # number with tuple coeffecient
 1(x, y)
 ==>
-SourceFile(CoefficientExpression(Number,Coefficient(TupleExpression(Identifier,Identifier))))
+SourceFile(CoefficientExpression(Number,TupleExpression(Identifier,Identifier)))
 
 
 # FieldExpression in PrefixedString - Thanks Paul (https://github.com/JuliaPluto/lezer-julia/pull/2/files)
@@ -167,19 +182,21 @@ SourceFile(PrefixedString(Prefix(FieldExpression(Identifier,FieldName)),String))
 # FieldExpression in Coefficient
 10x.a
 ==>
-SourceFile(CoefficientExpression(Number,Coefficient(FieldExpression(Identifier,FieldName))))
+SourceFile(CoefficientExpression(Number,FieldExpression(Identifier,FieldName)))
 
 
 # BROKEN: Interpolation in hcat
 :([x $y])
 ==> 
 SourceFile(
-  QuoteExpression(ParenthesizedExpression(
+  Quote(
+    ":(",
     MatrixExpression(MatrixRow(
       Identifier,
-      InterpolationExpression(Identifier),
+      InterpolationExpression(InterpolationStart, Identifier),
     )),
-  )),
+    ")",
+  ),
 )
 
 
@@ -222,7 +239,7 @@ SourceFile(
 # Symbol with operator
 :if
 ==>
-SourceFile(Symbol(SymbolName))
+SourceFile(Symbol(Identifier))
 
 
 # Keyword as fieldname
@@ -300,11 +317,11 @@ A'B:C'D
 SourceFile(BinaryExpression(
   CoefficientExpression(
     TransposeExpression(Identifier),
-    Coefficient(Identifier),
+    Identifier,
   ),
   CoefficientExpression(
     TransposeExpression(Identifier),
-    Coefficient(Identifier),
+    Identifier,
   ),
 ))
 
@@ -333,11 +350,9 @@ SourceFile(
         BinaryExpression(
           CoefficientExpression(
             Number,
-            Coefficient(
-              CallExpression(
-                Identifier,
-                ArgumentList(BinaryExpression(UnaryExpression(Operator, Identifier),Number)),
-              ),
+            CallExpression(
+              Identifier,
+              ArgumentList(BinaryExpression(UnaryExpression(Operator, Identifier),Number)),
             ),
           ),
           Number,
@@ -358,9 +373,7 @@ SourceFile(
 SourceFile(
   CoefficientExpression(
     Number,
-    Coefficient(
-      CallExpression(Identifier,ArgumentList),
-    ),
+    CallExpression(Identifier,ArgumentList),
   ),
 )
 
@@ -370,7 +383,7 @@ SourceFile(
 
 end
 ==>
-SourceFile(MacroExpression(MacroIdentifier(MacroName),ArgumentList,DoClause(do,DoClauseArguments(Identifier,Identifier),end)))
+SourceFile(MacroExpression(MacroIdentifier(MacroName),ArgumentList(DoClause(do,DoClauseArguments(Identifier,Identifier),end))))
 
 
 # Proper terminator
