@@ -1,8 +1,10 @@
 @precedence {
   interp
   immediate
+  symbol
 
   imports
+  imports-2
   renamed-import @right
 
   subscript
@@ -13,8 +15,8 @@
   postfix
   transpose
   typeonlyascription @left
-  type-parameters
   
+  type-parameters
   typeascription @left
   where @left
 
@@ -42,7 +44,7 @@
 
   something-statement
   return
-    
+
   baretuple
   assign @right
   arrow @right
@@ -62,9 +64,6 @@
   for-statement
   statement @right
 
-  do
-
-  left0 @left
   right0 @right
   regular0
   regular-1
@@ -81,21 +80,24 @@ expression {
   definition |
   MacroExpression |
   FunctionExpression |
+  CallExpression |
 
+  // TODO Imports is slow!
+  import_expressions |
+  
   Identifier |
   boolean |
   Character |
   Number |
   String |
   Symbol |
-  
+
+  CoefficientExpression |
   UnaryExpression |
   BinaryExpression |
   TernaryExpression |
   
   SpreadExpression |
-  CoefficientExpression |
-  CallExpression |
   Where |
   LonelyType |
   Operator ~op |
@@ -111,21 +113,24 @@ expression {
   CommandString |
   PrefixedString |
   
-  ParenthesizedExpression |
-  GeneratorExpression |
   // NOTE TupleExpression actually makes lezer generate FASTER?
   TupleExpression |
+  GeneratorExpression |
+  ArrayExpression |
+  ArrayComprehensionExpression |
+  MatrixExpression |
+  MatrixExpressionWithOnlySemicolons |
+  
   // TODO Discontinued vector might/is still used by some macros
   // .... but it also adds a couple of seconds to the build...
   // .... So changed it for TypeArgumentList for now...
   // .... Not fully accurate, but acurate enough?
   TypeArgumentList |
-  ArrayExpression |
-  ArrayComprehensionExpression |
-  MatrixExpression |
-  MatrixExpressionWithOnlySemicolons |
+
   TypedExpression |
-  ParameterizedIdentifier
+  ParameterizedIdentifier | 
+  
+  ParenthesizedExpression
 }
 
 
@@ -157,22 +162,22 @@ statement {
 BareTuple {
   expression (!baretuple "," expression)+ 
 }
+// Wonderful how making this a whole separate thing works, but nesting it
+// inside AssignmentStatement as `BareTuple ","?` does not 🤷‍♀️
+BareTuple_with_comma[@name="BareTuple"] {
+  expression (!baretuple "," expression)* ","
+}
 AssignmentStatement[@name="AssignmentExpression"] {  
-  // TODO Need to get `a, = tuple` working. Curiously, this is the only
-  // .... place that a BareTuple can have a trailing comma
-  // .... (`tuple = 10,` is not allowed?!)
-  // .... Problem is that I always get fighting precedences here,
-  // .... which will lezer go like "THEN I WILL ALWAYS MAKE IT AN ASSIGNMENT STATEMENT"
-  // I guess I'll make it an external tokenizer :D
-
-  // Want to do `Assignee { statement }` but lezer gets mad and
-  // very greedy with making things `Assignee` then...
-  
-  // (expression | BareTuple !baretuple ","?)          - Slowest
-  // (statement | BareTuple !baretuple ","?)  - Mostly slower, but correct
-  // statement                                - Fastest
-  (expression | BareTuple !baretuple ","?)
-  !assign
+  // So I finally think I understand what `!assign` here does:
+  // Lezer is not sure if, before reduce-ing `Assignee`, it should parse
+  // `@m x = 10` as `(@m x) = 10` or as `@m (x = 10)`.
+  // By telling it just before the reduce "Hey, if you got here, take this
+  // instead of something with a lower precedence" (e.g. a macro call),
+  // we make sure lezer parses this correctly
+  // Assignee {
+    (expression | BareTuple | BareTuple_with_comma)
+    !assign
+  // }
   (assignOperator | "=")
   statement
 }
@@ -202,8 +207,6 @@ blocky_things {
   BreakStatement |
   ContinueStatement |
   ReturnStatement |
-  ImportStatement |
-  ExportStatement |
   CompoundExpression
 }
 
@@ -324,29 +327,39 @@ QuoteStatement {
 // IMPORT STUFF
 /////////////////
 
+import_expressions {
+  ImportStatement |
+  ExportStatement
+}
+
 importable {
-  Identifier { word } |
+  Identifier |
   MacroIdentifier |
   Operator
 }
 
 ImportStatement {
-  (kw<"using"> | kw<"import">) (Imports | SelectedImport)
+  (kw<"using"> | kw<"import">)
+  (Imports | SelectedImport)
 }
 ExportStatement {
   kw<"export"> importable (!right0 "," importable)*
 }
 
+dot { "." | immediate_dot }
+
 Import {
-  "."* importable
-  Property { "." importable }*
-  Rename { kw<"as"> importable }?
+  RelativeDots { !imports-2 (!imports-2 dot !imports-2)+ }?
+  Property { importable !imports-2 dot }*
+  // importable
+  Name { importable }
+  Rename { kw<"as"> importable }? 
 }
 Imports {
   Import (!imports "," Import)*
 }
 SelectedImport {
-  Import !renamed-import ":" Imports
+  Import !renamed-import immediate_colon Imports
 }
 
 // DEFINITIONS
@@ -383,12 +396,14 @@ AbstractDefinition {
 }
 
 StructDefinition {
-  blockkw<"struct", "end"> Definition !regular0
+  blockkw<"struct", "end"> Definition
     expressionList
   end
 }
 MutableStructDefinition {
-  "mutable struct" Definition !regular0
+  "mutable struct"
+  // blockkw<"mutable", "end"> blockkw<"struct", "end">
+  Definition
     expressionList
   end
 }
@@ -410,25 +425,36 @@ BareModuleDefinition {
 ParameterizedIdentifier[@dynamicPrecedence=1] {
   expression
   !type-parameters
-  immediateBrace
-  TypeArgumentList
+  ImmediateTypeArgumentList
 }
-
-type_argument_list { "{" inner_tuple "}" }
+ImmediateTypeArgumentList[@name="TypeArgumentList"] {
+  immediate_brace inner_tuple "}"
+}
 TypeArgumentList {
-  type_argument_list
+  "{" inner_tuple "}"
 }
 
 FieldName { word }
 
 FieldExpression {
   expression
-  !immediate immediateDot !dot "." !dot
-  (FieldName | QuoteExpression | InterpolationExpression)
+  immediate_dot
+  (FieldName | Symbol | QuoteExpression | InterpolationExpression)
+}
+
+begindex_start[@export="begindex_start"] { 
+  immediate_bracket
+}
+begindex_end[@export="begindex_end"] { 
+  "]"
 }
 
 SubscriptExpression {
-  expression !immediate immediateBracket "[" inner_tuple "]"
+  expression
+  !subscript
+  begindex_start // [
+  inner_tuple
+  begindex_end // ]
 }
 
 SpreadExpression {
@@ -464,12 +490,22 @@ CompoundExpression {
   end
 }
 
+// TODO Has more edge cases:
+// .... but `a'(a)` being `(a')(a)`
+// .... or `(10)x` still being `10 * x`
+// .... or `(x)x` being `x * x`
+// .... but `(:d)x` being a syntax error?
+// .... And a lot more most likely
 CoefficientExpression {
   (Number | TransposeExpression)
   !coefficient
-  (nowhitespace | immediateParen)
-  // Need to investigate what `!coefficient` here does
-  Coefficient { !coefficient expression }
+  Coefficient {
+    // Need to investigate what `!coefficient` here does
+    !coefficient nowhitespace expression |
+    ParenthesizedInsideCoefficient[@name="ParenthesizedExpression"] {
+      immediate_paren inner_tuple ")"
+    }
+  }
 }
 
 // @dynamicPrecedence is necessary to nudge `x()` to `CallExpression`
@@ -477,15 +513,10 @@ CoefficientExpression {
 CallExpression[@dynamicPrecedence=1] {
   expression
   !call
-  BroadcastDot { immediateDot "." }?
-  (nowhitespace | immediateParen)
+  Dot[@name="BroadcastDot"] { immediate_dot }?
   ArgumentList
 }
 
-do_clause_argument {
-  Identifier
-  Type { !do "::" Identifier }?
-}
 DoClause {
   blockkw<"do", "end"> 
   (
@@ -494,8 +525,8 @@ DoClause {
     // as `(asd::Vector){Bar}` but it should be (asd)::Vector{Bar}`
     // SO ODD!! WHAT DO DOCLAUSEARGUMENTS HAVE TO DO WITH THAT!
     //
-    // DoClauseArguments { expression ("," expression)* } |
-    DoClauseArguments { do_clause_argument ("," do_clause_argument)* } |
+    DoClauseArguments { expression ("," expression)* } |
+    // DoClauseArguments { do_clause_argument ("," do_clause_argument)* } |
     terminator
   )
   expressionList
@@ -518,12 +549,12 @@ LonelyType {
 InterpolationExpression[@name=Interpolation, @dynamicPrecedence=10] {
   interpolationStart expression interpolationEnd |
   // TODO Make this "$" also InterpolationStart?
-  "$" !interp nowhitespace symbol_name
+  interpolation_start symbol_name
 }
 
 Symbol {
   // TODO Make this ":" also QuoteStart?
-  ":" !interp nowhitespace symbol_name
+  symbol_start !symbol symbol_name
 }
 symbol_name {
   // The reason Symbol and QuoteExpression can co-exist is because
@@ -580,7 +611,7 @@ TupleExpression {
 }
 
 ArgumentList {
-  "(" inner_tuple ")" 
+  immediate_paren inner_tuple ")" 
   DoClause?
 }
 
@@ -613,23 +644,35 @@ DiscontinuedVector {
 // Macros!
 /////////////
 
-MacroExpression {
+MacroExpression[@dynamicPrecedence=10] {
   (MacroIdentifier | MacroFieldExpression)
-  !macro
   (
-    !immediate immediateParen args[@dynamicPrecedence=10] { ArgumentList } | // @use_memo([]) do; ... end
-    !immediate immediateBrace TypeArgumentList | // @NamedTuple{x::Int}
+    with_parens[@dynamicPrecedence=1] {
+      // @use_memo([]) do; ... end
+      !macro ArgumentList
+    } | 
+    with_typed_arguments[@dynamicPrecedence=1] {
+       // @NamedTuple{x::Int}
+      !macro ImmediateTypeArgumentList
+    } |
     !macro MacroArgumentList // Lame, normal macro call pfffft
   )?
 }
 
 MacroFieldExpression {
-  expression !immediate immediateDot !dot "." !dot MacroIdentifier |
-  MacroIdentifier !immediate immediateDot !dot "." !dot MacroFieldName { word }
+  expression !immediate immediate_dot MacroIdentifier  |
+  MacroIdentifier !immediate immediate_dot Identifier
 }
 
 MacroIdentifier {
-  "@" MacroName { word | Operator | Operator[group="operator"] { "." } }
+  "@" MacroName { 
+    word |
+    Operator |
+    // These two aren't allowed as normal operators,
+    // but are allowed as macro names 🤷‍♀️
+    // TODO ".." should be here too, but conflicts with `import ..X`
+    Operator[group="operator"] { "." }
+  }
 }
 
 MacroArgumentList {
@@ -637,7 +680,6 @@ MacroArgumentList {
 }
 
 FunctionExpression {
-  // (ArgumentList2 { expression } | ArgumentList)
   ArgumentList { !arrow expression !arrow }
   !arrow
   "->"
@@ -648,7 +690,7 @@ FunctionExpression {
 contains_operator { kw<"in"> | kw<"isa"> }
 // Needs `ternary2` so it can also match ` : `
 // (Else just `a : b` freaks out)
-colon_operator { ":" | ternary2 }
+colon_operator { ":" | immediate_colon | symbol_start | ternary2 }
 
 // So turns out that if I remove all these and use
 // `BinaryExpression { expression !plus "$" expression }`
@@ -659,7 +701,10 @@ BinaryExpression {
   expression !power powerOperator expression |
   expression !bitshift bitshiftOperator expression |
   expression !pair pairOperator expression |
-  expression !colon colon_operator expression |
+  // TODO Ideally we have ".." here too, but it causes too much
+  // .... headaches to combine it with imports >_>
+  // expression !colon (colon_operator | "..") expression |
+  expression !colon (colon_operator) expression |
   expression !times timesOperator expression |
   expression !plus plusOperator expression |
   expression !plus_but_sometimes_interpolation "$" expression |
@@ -744,10 +789,10 @@ ForBinding {
 }
 
 // Even though it is technically "just an unary expression",
-// I'm keeping this separate because it needs immediateSingleQuote
+// I'm keeping this separate because it needs immediate_single_quote
 // and because I don't feel like rewriting tests
 TransposeExpression {
-  expression !transpose immediateSingleQuote "'"
+  expression !transpose immediate_single_quote
 }
 
 @skip {} {
@@ -761,14 +806,14 @@ TransposeExpression {
     "`" (commandStringContent | Interpolation)* "`"
   }
 
-  StringWithoutInterpolation[@name="String"] {
-    '"' stringContentWithoutInterpolation '"'
+  StringWithoutInterpolation[@name=] {
+    stringContentWithoutInterpolation '"'
   }
-  TripleStringWithoutInterpolation[@name="TripleString"] {
-    '"""' tripleStringContentWithoutInterpolation '"""'
+  TripleStringWithoutInterpolation[@name=] {
+    tripleStringContentWithoutInterpolation '"""'
   }
-  CommandStringWithoutInterpolation[@name="CommandString"] {
-    "`" commandStringContentWithoutInterpolation "`"
+  CommandStringWithoutInterpolation[@name=] {
+    commandStringContentWithoutInterpolation "`"
   }
 }
 
@@ -786,11 +831,11 @@ Interpolation {
 PrefixedString {
   Prefix { expression !prefix }
   (
-    immediateDoubleQuote StringWithoutInterpolation |
-    immediateDoubleQuote TripleStringWithoutInterpolation |
-    immediateBackquote CommandStringWithoutInterpolation
+    String { immediate_quote StringWithoutInterpolation } |
+    String { immediate_triple_quote TripleStringWithoutInterpolation } |
+    String { immediate_back_quote CommandStringWithoutInterpolation }
   )
-  Suffix { !suffix nowhitespace word }?
+  // Suffix { !suffix Suffix }?
 }
 
 operator<term> { [@name={term},group="operator"]{ term } } 
@@ -806,16 +851,29 @@ boolean { @specialize[@name=BooleanLiteral]<Identifier, "true" | "false"> }
   EndIndex
 }
 
-@external tokens layoutExtra from "./index.tokens.js" {
-  immediateParen,
-  immediateColon,
-  immediateBrace,
-  immediateBracket,
-  immediateSingleQuote,
-  immediateDoubleQuote,
-  immediateBackquote,
-  immediateDot,
+// This needs to be above the other immediate_x tokens,
+// specifically `immediate_paren`
+@external tokens nowhitespace from "./index.tokens.js" {
+  // ONLY USE FOR COEFFECIENT!!!
+  // This is a very isolated case, just after numbers or tranpose, which is okay for now.
+  // Ideally, think of a way to make it without nowhitespace
   nowhitespace
+}
+@external tokens layoutExtra from "./index.tokens.js" {
+  immediate_dot[@name="."]
+  
+  immediate_brace[@name="{"]
+  immediate_paren[@name="("]
+  immediate_bracket[@name="["]
+  immediate_colon[@name=":"]
+  
+  immediate_quote[@name="\""]
+  immediate_triple_quote[@name="\"\"\""]
+  immediate_back_quote[@name="`"]
+  immediate_single_quote[@name="'"]
+
+  interpolation_start[@name="$"]
+  symbol_start[@name=":"]
 }
 
 terminator[@export="terminator"] { newline | ";" }
@@ -944,7 +1002,7 @@ plusOperator {
 
   // TODO Uncomment this so these will actually show up
   // .... in the tree and not be hidden blegh
-  "(" ")" "{" "}" "[" "]" ";" "," "..." "." "$"
+  "(" ")" "{" "}" "[" "]" ";" "," "..." "." "$" "@"
 
   "="
 

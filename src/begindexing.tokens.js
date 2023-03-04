@@ -1,49 +1,56 @@
-// begindexing.tokens.js
-
 import { ContextTracker } from "@lezer/lr";
-import { BracketL, BracketR, immediateBracket } from "./index.terms.js";
+import { begindex_start, begindex_end } from "./index.terms.js";
 import * as terms from "./index.terms.js";
 
+// TODO FIX
 export const trackIsIndexing = new ContextTracker({
   start: {
     depth: 0,
     is_in_index: false,
-    did_get_immediate: false,
     parent: null,
   },
   reduce(context, term) {
-    // return context.depth < 0 && bracketed.has(term) ? context.parent : context;
-    return context;
-  },
-  shift(context, term, stack, input) {
-    if (term === immediateBracket) {
+    if (term === begindex_start) {
       return {
-        depth: context.depth,
-        is_in_index: false,
-        did_get_immediate: true,
+        depth: context.depth + 1,
+        is_in_index: true,
         parent: context,
       };
     }
-    if (term === BracketL) {
-      if (context.did_get_immediate) {
-        return {
-          depth: context.depth + 1,
-          is_in_index: true,
-          did_get_immediate: false,
-          parent: context.parent,
-        };
-      } else {
-        return {
-          depth: context.depth + 1,
-          is_in_index: false,
-          did_get_immediate: false,
-          parent: context,
-        };
-      }
-    }
-    if (term === BracketR) {
+    if (term === begindex_end) {
       return context.parent;
     }
+    return context;
+  },
+  shift(context, term, stack, input) {
+    // if (term === immediate_bracket) {
+    //   return {
+    //     depth: context.depth,
+    //     is_in_index: false,
+    //     did_get_immediate: true,
+    //     parent: context,
+    //   };
+    // }
+    // if (term === BracketL) {
+    //   if (context.did_get_immediate) {
+    //     return {
+    //       depth: context.depth + 1,
+    //       is_in_index: true,
+    //       did_get_immediate: false,
+    //       parent: context.parent,
+    //     };
+    //   } else {
+    //     return {
+    //       depth: context.depth + 1,
+    //       is_in_index: false,
+    //       did_get_immediate: false,
+    //       parent: context,
+    //     };
+    //   }
+    // }
+    // if (term === BracketR) {
+    //   return context.parent;
+    // }
 
     return context;
   },

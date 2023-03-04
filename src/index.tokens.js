@@ -13,7 +13,6 @@ const CHAR_LPAREN = "(".codePointAt(0);
 const CHAR_LBRACE = "{".codePointAt(0);
 const CHAR_LBRACKET = "[".codePointAt(0);
 const CHAR_SEMICOLON = ";".codePointAt(0);
-const CHAR_COLON = ":".codePointAt(0);
 const CHAR_DQUOTE = '"'.codePointAt(0);
 const CHAR_SINGLE_QUOTE = "'".codePointAt(0);
 const CHAR_NEWLINE = "\n".codePointAt(0);
@@ -25,6 +24,9 @@ const CHAR_0 = "0".codePointAt(0);
 const CHAR_9 = "9".codePointAt(0);
 const CHAR_UNDERSCORE = "_".codePointAt(0);
 const CHAR_EXCLAMATION = "!".codePointAt(0);
+
+const CHAR_$ = "$".codePointAt(0);
+const CHAR_COLON = ":".codePointAt(0);
 
 // UNICODE CATEGORIES TESTS
 
@@ -396,81 +398,13 @@ const isWhitespace = (input, offset) => {
   );
 };
 
-export const layoutExtra = new ExternalTokenizer(
+export const nowhitespace = new ExternalTokenizer(
   (input, stack) => {
-    // immediateParen
-    if (
-      input.peek(0) === CHAR_LPAREN &&
-      !isWhitespace(input, -1) &&
-      stack.canShift(terms.immediateParen)
-    ) {
-      input.acceptToken(terms.immediateParen, 0);
-      return;
-    }
-    // immediateColon
-    if (
-      input.peek(0) === CHAR_COLON &&
-      !isWhitespace(input, -1) &&
-      stack.canShift(terms.immediateColon)
-    ) {
-      input.acceptToken(terms.immediateColon, 0);
-      return;
-    }
-    // immediateBrace
-    if (
-      input.peek(0) === CHAR_LBRACE &&
-      !isWhitespace(input, -1) &&
-      stack.canShift(terms.immediateBrace)
-    ) {
-      input.acceptToken(terms.immediateBrace, 0);
-      return;
-    }
-    // immediateBracket
-    if (
-      input.peek(0) === CHAR_LBRACKET &&
-      !isWhitespace(input, -1) &&
-      stack.canShift(terms.immediateBracket)
-    ) {
-      input.acceptToken(terms.immediateBracket, 0);
-      return;
-    }
-    // immediateSingleQuote (for transpose `a'`)
-    if (
-      input.peek(0) === CHAR_SINGLE_QUOTE &&
-      !isWhitespace(input, -1) &&
-      stack.canShift(terms.immediateSingleQuote)
-    ) {
-      input.acceptToken(terms.immediateSingleQuote, 0);
-      return;
-    }
-    // immediateDoubleQuote (for prefixed strings)
-    if (
-      input.peek(0) === CHAR_DQUOTE &&
-      !isWhitespace(input, -1) &&
-      stack.canShift(terms.immediateDoubleQuote)
-    ) {
-      input.acceptToken(terms.immediateDoubleQuote, 0);
-      return;
-    }
-    // immediateBackquote (for prefixed strings)
-    if (
-      input.peek(0) === CHAR_BACKQUOTE &&
-      !isWhitespace(input, -1) &&
-      stack.canShift(terms.immediateBackquote)
-    ) {
-      input.acceptToken(terms.immediateBackquote, 0);
-      return;
-    }
-    // immediateDot (for fieldexpression `a.b` and broadcasting `a.()`)
-    if (
-      input.peek(0) === CHAR_DOT &&
-      !isWhitespace(input, -1) &&
-      stack.canShift(terms.immediateDot)
-    ) {
-      input.acceptToken(terms.immediateDot, 0);
-      return;
-    }
     // nowhitespace
+    // ONLY USE FOR COEFFECIENT!
+    // Also is all the way on top, because it
+    // needs to run before immediate_paren,
+    // to choose coeffecient over
     if (
       !isWhitespace(input, -1) &&
       !isWhitespace(input, 0) &&
@@ -486,3 +420,124 @@ export const layoutExtra = new ExternalTokenizer(
     extend: true,
   }
 );
+
+export const layoutExtra = new ExternalTokenizer((input, stack) => {
+  // immediateParen
+  if (
+    input.peek(0) === CHAR_LPAREN &&
+    !isWhitespace(input, -1) &&
+    stack.canShift(terms.immediate_paren)
+  ) {
+    input.acceptToken(terms.immediate_paren, 1);
+    return;
+  }
+  // immediateBrace
+  if (
+    input.peek(0) === CHAR_LBRACE &&
+    !isWhitespace(input, -1) &&
+    stack.canShift(terms.immediate_brace)
+  ) {
+    input.acceptToken(terms.immediate_brace, 1);
+    return;
+  }
+  // immediate_bracket
+  if (
+    input.peek(0) === CHAR_LBRACKET &&
+    !isWhitespace(input, -1) &&
+    stack.canShift(terms.immediate_bracket)
+  ) {
+    input.acceptToken(terms.immediate_bracket, 1);
+    return;
+  }
+  // immediateSingleQuote (for transpose `a'`)
+  if (
+    input.peek(0) === CHAR_SINGLE_QUOTE &&
+    !isWhitespace(input, -1) &&
+    stack.canShift(terms.immediate_single_quote)
+  ) {
+    input.acceptToken(terms.immediate_single_quote, 1);
+    return;
+  }
+  if (
+    input.peek(0) === CHAR_DQUOTE &&
+    input.peek(1) === CHAR_DQUOTE &&
+    input.peek(2) === CHAR_DQUOTE &&
+    !isWhitespace(input, -1) &&
+    stack.canShift(terms.immediate_triple_quote)
+  ) {
+    input.acceptToken(terms.immediate_triple_quote, 3);
+    return;
+  }
+  // immediateDoubleQuote (for prefixed strings)
+  if (
+    input.peek(0) === CHAR_DQUOTE &&
+    !isWhitespace(input, -1) &&
+    stack.canShift(terms.immediate_quote)
+  ) {
+    input.acceptToken(terms.immediate_quote, 1);
+    return;
+  }
+  // immediateBackquote (for prefixed strings)
+  if (
+    input.peek(0) === CHAR_BACKQUOTE &&
+    !isWhitespace(input, -1) &&
+    stack.canShift(terms.immediate_back_quote)
+  ) {
+    input.acceptToken(terms.immediate_back_quote, 1);
+    return;
+  }
+  // immediateDot (for fieldexpression `a.b` and broadcasting `a.()`)
+  if (
+    input.peek(0) === CHAR_DOT &&
+    !isWhitespace(input, -1) &&
+    input.peek(1) !== CHAR_DOT && // So `..` can still exist
+    stack.canShift(terms.immediate_dot)
+  ) {
+    input.acceptToken(terms.immediate_dot, 1);
+    return;
+  }
+
+  if (
+    input.peek(0) === CHAR_$ &&
+    !isWhitespace(input, 1) &&
+    input.peek(1) !== CHAR_LPAREN &&
+    stack.canShift(terms.interpolation_start)
+  ) {
+    input.acceptToken(terms.interpolation_start, 1);
+    return;
+  }
+
+  // The `:` in `:xxx`,
+  // Detected when there is a `:`,
+  // followed by no whitespace and no `:` or `(`
+  if (
+    input.peek(0) === CHAR_COLON &&
+    !isWhitespace(input, 1) &&
+    input.peek(1) !== CHAR_LPAREN && // To not interfere with `:(`
+    input.peek(1) !== CHAR_COLON && // To not interfere with `::`
+    stack.canShift(terms.symbol_start)
+  ) {
+    input.acceptToken(terms.symbol_start, 1);
+    return;
+  }
+
+  if (
+    input.peek(0) === CHAR_COLON &&
+    !isWhitespace(input, -1) &&
+    input.peek(1) !== CHAR_LPAREN && // To not interfere with `:(`
+    input.peek(1) !== CHAR_COLON && // To not interfere with `::`
+    stack.canShift(terms.immediate_colon)
+  ) {
+    input.acceptToken(terms.immediate_colon, 1);
+    return;
+  }
+
+  if (
+    input.peek(0) === CHAR_DQUOTE &&
+    !isWhitespace(input, -1) &&
+    stack.canShift(terms.immediate_quote)
+  ) {
+    input.acceptToken(terms.immediate_quote, 1);
+    return;
+  }
+});

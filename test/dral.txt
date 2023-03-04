@@ -170,7 +170,7 @@ SourceFile(
 # number with tuple coeffecient
 1(x, y)
 ==>
-SourceFile(CoefficientExpression(Number,TupleExpression(Identifier,Identifier)))
+SourceFile(CoefficientExpression(Number,Coefficient(ParenthesizedExpression(Identifier,Identifier))))
 
 
 # FieldExpression in PrefixedString - Thanks Paul (https://github.com/JuliaPluto/lezer-julia/pull/2/files)
@@ -182,10 +182,10 @@ SourceFile(PrefixedString(Prefix(FieldExpression(Identifier,FieldName)),String))
 # FieldExpression in Coefficient
 10x.a
 ==>
-SourceFile(CoefficientExpression(Number,FieldExpression(Identifier,FieldName)))
+SourceFile(CoefficientExpression(Number,Coefficient(FieldExpression(Identifier,FieldName))))
 
 
-# BROKEN: Interpolation in hcat
+# Interpolation in hcat
 :([x $y])
 ==> 
 SourceFile(
@@ -193,7 +193,7 @@ SourceFile(
     ":(",
     MatrixExpression(MatrixRow(
       Identifier,
-      InterpolationExpression(InterpolationStart, Identifier),
+      Interpolation("$", Identifier),
     )),
     ")",
   ),
@@ -230,7 +230,7 @@ SourceFile(PrefixedString(Prefix(Identifier),String))
 ==>
 SourceFile(
   MacroExpression(
-    MacroFieldExpression(MacroIdentifier(MacroName),MacroFieldName),
+    MacroFieldExpression(MacroIdentifier("@",MacroName),".",Identifier),
     MacroArgumentList(BinaryExpression(Number,Number))
   )
 )
@@ -317,11 +317,11 @@ A'B:C'D
 SourceFile(BinaryExpression(
   CoefficientExpression(
     TransposeExpression(Identifier),
-    Identifier,
+    Coefficient(Identifier),
   ),
   CoefficientExpression(
     TransposeExpression(Identifier),
-    Identifier,
+    Coefficient(Identifier),
   ),
 ))
 
@@ -350,10 +350,10 @@ SourceFile(
         BinaryExpression(
           CoefficientExpression(
             Number,
-            CallExpression(
+            Coefficient(CallExpression(
               Identifier,
               ArgumentList(BinaryExpression(UnaryExpression(Operator, Identifier),Number)),
-            ),
+            )),
           ),
           Number,
         ),
@@ -373,7 +373,7 @@ SourceFile(
 SourceFile(
   CoefficientExpression(
     Number,
-    CallExpression(Identifier,ArgumentList),
+    Coefficient(CallExpression(Identifier,ArgumentList)),
   ),
 )
 

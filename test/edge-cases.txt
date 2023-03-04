@@ -739,7 +739,7 @@ SourceFile(
 
 SourceFile(
   FunctionExpression(ArgumentList(TupleExpression(Identifier,Identifier)),BinaryExpression(Identifier,Identifier)),
-  FunctionExpression(ArgumentList(TupleExpression(Identifier)),Identifier),
+  FunctionExpression(ArgumentList(ParenthesizedExpression(Identifier)),Identifier),
 )
 
 # RangeExpression_ok
@@ -786,7 +786,7 @@ import Module: ==, +
 SourceFile(
   ImportStatement(
     import,
-    SelectedImport(Import(Identifier),Imports(Import(Operator),Import(Operator)))
+    SelectedImport(Import(Name(Identifier)),Imports(Import(Name(Operator)),Import(Name(Operator))))
   )
 )
 
@@ -902,7 +902,7 @@ import ..Ok
 SourceFile(
   ImportStatement(
     import,
-    Imports(Import(".", ".", Identifier))
+    Imports(Import(RelativeDots(".", "."), Name(Identifier)))
   )
 )
 
