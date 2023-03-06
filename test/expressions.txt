@@ -326,10 +326,10 @@ SourceFile(
 ==>
 
 SourceFile(
-  UnaryExpression(Operator, Identifier),
-  UnaryExpression(Operator, Identifier),
-  UnaryExpression(Operator, Number),
-  TransposeExpression(ArrayExpression(Identifier)),
+  UnaryExpression("+", Identifier),
+  UnaryExpression("+", Identifier),
+  UnaryExpression("!", Number),
+  TransposeExpression(ArrayExpression(Identifier), "'"),
   CallExpression(Operator, ArgumentList(
     BinaryExpression(Identifier,Identifier)
   )),
@@ -531,36 +531,33 @@ SourceFile(
 
 SourceFile(
   GeneratorExpression(
-    ListCompherension(
-      CallExpression(
-        Identifier,
-        ArgumentList(Identifier,Identifier),
-      ),
-      ForClause(for,ForBinding(Identifier,AssignOperator(in),Identifier)),
-      IfClause(if,Identifier),
+    CallExpression(
+      Identifier,
+      ArgumentList(Identifier,Identifier),
+    ),
+    ForClause(
+      for,
+      ForBinding(Identifier,AssignOperator(in),Identifier),
+      IfClause(if,Identifier)
     ),
   ),
   GeneratorExpression(
-    ListCompherension(
-      CallExpression(
-        Identifier,
-        ArgumentList(Identifier,Identifier),
-      ),
-      ForClause(
-        for,
-        ForBinding(Identifier,AssignOperator(in),Identifier),
-        ForBinding(Identifier,AssignOperator("="),Number),
-      ),
+    CallExpression(
+      Identifier,
+      ArgumentList(Identifier,Identifier),
+    ),
+    ForClause(
+      for,
+      ForBinding(Identifier,AssignOperator(in),Identifier),
+      ForBinding(Identifier,AssignOperator("="),Number),
     ),
   ),
   GeneratorExpression(
-    ListCompherension(
-      CallExpression(Identifier,ArgumentList(Identifier,Identifier)),
-      ForClause(
-        for,
-        ForBinding(Identifier,AssignOperator(in),Identifier),
-        ForBinding(Identifier,AssignOperator("="),Number),
-      ),
+    CallExpression(Identifier,ArgumentList(Identifier,Identifier)),
+    ForClause(
+      for,
+      ForBinding(Identifier,AssignOperator(in),Identifier),
+      ForBinding(Identifier,AssignOperator("="),Number),
       IfClause(if,Identifier),
     ),
   ),

@@ -463,7 +463,7 @@ SourceFile(
         )
       ),
       where,
-      Type(TypeArgumentList(Identifier))
+      Type(OldVectorExpression(Identifier))
     ),
     Identifier
   )
@@ -786,7 +786,10 @@ import Module: ==, +
 SourceFile(
   ImportStatement(
     import,
-    SelectedImport(Import(Name(Identifier)),Imports(Import(Name(Operator)),Import(Name(Operator))))
+    SelectedImport(
+      Identifier,
+      Imports(Operator, Operator)
+    ),
   )
 )
 
@@ -817,9 +820,9 @@ arr[s += 1]
 ==>
 
 SourceFile(
-  SubscriptExpression(
+  TypedMatrixExpression(
     Identifier,
-    AssignmentExpression(Identifier,Number)
+    MatrixRow(AssignmentExpression(Identifier,Number))
   )
 )
 
@@ -830,7 +833,7 @@ arr[x for x in xs]
 ==>
 
 SourceFile(
-  SubscriptExpression(
+  TypedComprehensionExpression(
     Identifier,
     ListCompherension(
       Identifier,
@@ -899,12 +902,7 @@ import ..Ok
 
 ==>
 
-SourceFile(
-  ImportStatement(
-    import,
-    Imports(Import(RelativeDots(".", "."), Name(Identifier)))
-  )
-)
+SourceFile(ImportStatement(import,RelativeImport(".",RelativeImport(".",Identifier))))
 
 # Operator_eq_ok
 

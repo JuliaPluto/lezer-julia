@@ -170,7 +170,7 @@ SourceFile(
 # number with tuple coeffecient
 1(x, y)
 ==>
-SourceFile(CoefficientExpression(Number,Coefficient(ParenthesizedExpression(Identifier,Identifier))))
+SourceFile(CoefficientExpression(Number,Coefficient(TupleExpression(Identifier,Identifier))))
 
 
 # FieldExpression in PrefixedString - Thanks Paul (https://github.com/JuliaPluto/lezer-julia/pull/2/files)
@@ -352,7 +352,7 @@ SourceFile(
             Number,
             Coefficient(CallExpression(
               Identifier,
-              ArgumentList(BinaryExpression(UnaryExpression(Operator, Identifier),Number)),
+              ArgumentList(BinaryExpression(UnaryExpression("+", Identifier),Number)),
             )),
           ),
           Number,

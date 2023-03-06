@@ -50,7 +50,7 @@ const CAT_Emoji = /^\p{Emoji}/u;
 // TERMINATOR
 
 export const newline = new ExternalTokenizer((input, stack) => {
-  let c = input.peek(0);
+  let c = input.next;
   if (c === CHAR_NEWLINE) {
     if (stack.canShift(terms.newline)) {
       input.acceptToken(terms.newline, 1);
@@ -60,7 +60,7 @@ export const newline = new ExternalTokenizer((input, stack) => {
 });
 
 export const terminator = new ExternalTokenizer((input, stack) => {
-  let c = input.peek(0);
+  let c = input.next;
   if (c === CHAR_NEWLINE || c === CHAR_SEMICOLON) {
     if (stack.canShift(terms.terminator)) {
       input.acceptToken(terms.terminator, 1);
@@ -382,8 +382,7 @@ export const BlockComment = new ExternalTokenizer((input, stack) => {
 
 // LAYOUT TOKENIZERS
 
-const isWhitespace = (input, offset) => {
-  let c = input.peek(offset);
+const isWhitespace = (c) => {
   return (
     (c >= 9 && c < 14) ||
     (c >= 32 && c < 33) ||
@@ -406,9 +405,9 @@ export const nowhitespace = new ExternalTokenizer(
     // needs to run before immediate_paren,
     // to choose coeffecient over
     if (
-      !isWhitespace(input, -1) &&
-      !isWhitespace(input, 0) &&
-      input.peek(0) !== -1 &&
+      !isWhitespace(input.next) &&
+      !isWhitespace(input.peek(-1)) &&
+      input.next !== -1 &&
       stack.canShift(terms.nowhitespace)
     ) {
       input.acceptToken(terms.nowhitespace, 0);
@@ -424,8 +423,8 @@ export const nowhitespace = new ExternalTokenizer(
 export const layoutExtra = new ExternalTokenizer((input, stack) => {
   // immediateParen
   if (
-    input.peek(0) === CHAR_LPAREN &&
-    !isWhitespace(input, -1) &&
+    input.next === CHAR_LPAREN &&
+    !isWhitespace(input.peek(-1)) &&
     stack.canShift(terms.immediate_paren)
   ) {
     input.acceptToken(terms.immediate_paren, 1);
@@ -433,8 +432,8 @@ export const layoutExtra = new ExternalTokenizer((input, stack) => {
   }
   // immediateBrace
   if (
-    input.peek(0) === CHAR_LBRACE &&
-    !isWhitespace(input, -1) &&
+    input.next === CHAR_LBRACE &&
+    !isWhitespace(input.peek(-1)) &&
     stack.canShift(terms.immediate_brace)
   ) {
     input.acceptToken(terms.immediate_brace, 1);
@@ -442,8 +441,8 @@ export const layoutExtra = new ExternalTokenizer((input, stack) => {
   }
   // immediate_bracket
   if (
-    input.peek(0) === CHAR_LBRACKET &&
-    !isWhitespace(input, -1) &&
+    input.next === CHAR_LBRACKET &&
+    !isWhitespace(input.peek(-1)) &&
     stack.canShift(terms.immediate_bracket)
   ) {
     input.acceptToken(terms.immediate_bracket, 1);
@@ -451,18 +450,18 @@ export const layoutExtra = new ExternalTokenizer((input, stack) => {
   }
   // immediateSingleQuote (for transpose `a'`)
   if (
-    input.peek(0) === CHAR_SINGLE_QUOTE &&
-    !isWhitespace(input, -1) &&
+    input.next === CHAR_SINGLE_QUOTE &&
+    !isWhitespace(input.peek(-1)) &&
     stack.canShift(terms.immediate_single_quote)
   ) {
     input.acceptToken(terms.immediate_single_quote, 1);
     return;
   }
   if (
-    input.peek(0) === CHAR_DQUOTE &&
+    input.next === CHAR_DQUOTE &&
     input.peek(1) === CHAR_DQUOTE &&
     input.peek(2) === CHAR_DQUOTE &&
-    !isWhitespace(input, -1) &&
+    !isWhitespace(input.peek(-1)) &&
     stack.canShift(terms.immediate_triple_quote)
   ) {
     input.acceptToken(terms.immediate_triple_quote, 3);
@@ -470,8 +469,8 @@ export const layoutExtra = new ExternalTokenizer((input, stack) => {
   }
   // immediateDoubleQuote (for prefixed strings)
   if (
-    input.peek(0) === CHAR_DQUOTE &&
-    !isWhitespace(input, -1) &&
+    input.next === CHAR_DQUOTE &&
+    !isWhitespace(input.peek(-1)) &&
     stack.canShift(terms.immediate_quote)
   ) {
     input.acceptToken(terms.immediate_quote, 1);
@@ -479,8 +478,8 @@ export const layoutExtra = new ExternalTokenizer((input, stack) => {
   }
   // immediateBackquote (for prefixed strings)
   if (
-    input.peek(0) === CHAR_BACKQUOTE &&
-    !isWhitespace(input, -1) &&
+    input.next === CHAR_BACKQUOTE &&
+    !isWhitespace(input.peek(-1)) &&
     stack.canShift(terms.immediate_back_quote)
   ) {
     input.acceptToken(terms.immediate_back_quote, 1);
@@ -488,8 +487,8 @@ export const layoutExtra = new ExternalTokenizer((input, stack) => {
   }
   // immediateDot (for fieldexpression `a.b` and broadcasting `a.()`)
   if (
-    input.peek(0) === CHAR_DOT &&
-    !isWhitespace(input, -1) &&
+    input.next === CHAR_DOT &&
+    !isWhitespace(input.peek(-1)) &&
     input.peek(1) !== CHAR_DOT && // So `..` can still exist
     stack.canShift(terms.immediate_dot)
   ) {
@@ -498,8 +497,8 @@ export const layoutExtra = new ExternalTokenizer((input, stack) => {
   }
 
   if (
-    input.peek(0) === CHAR_$ &&
-    !isWhitespace(input, 1) &&
+    input.next === CHAR_$ &&
+    !isWhitespace(input.peek(1)) &&
     input.peek(1) !== CHAR_LPAREN &&
     stack.canShift(terms.interpolation_start)
   ) {
@@ -511,8 +510,8 @@ export const layoutExtra = new ExternalTokenizer((input, stack) => {
   // Detected when there is a `:`,
   // followed by no whitespace and no `:` or `(`
   if (
-    input.peek(0) === CHAR_COLON &&
-    !isWhitespace(input, 1) &&
+    input.next === CHAR_COLON &&
+    !isWhitespace(input.peek(1)) &&
     input.peek(1) !== CHAR_LPAREN && // To not interfere with `:(`
     input.peek(1) !== CHAR_COLON && // To not interfere with `::`
     stack.canShift(terms.symbol_start)
@@ -522,8 +521,8 @@ export const layoutExtra = new ExternalTokenizer((input, stack) => {
   }
 
   if (
-    input.peek(0) === CHAR_COLON &&
-    !isWhitespace(input, -1) &&
+    input.next === CHAR_COLON &&
+    !isWhitespace(input.peek(-1)) &&
     input.peek(1) !== CHAR_LPAREN && // To not interfere with `:(`
     input.peek(1) !== CHAR_COLON && // To not interfere with `::`
     stack.canShift(terms.immediate_colon)
@@ -533,8 +532,8 @@ export const layoutExtra = new ExternalTokenizer((input, stack) => {
   }
 
   if (
-    input.peek(0) === CHAR_DQUOTE &&
-    !isWhitespace(input, -1) &&
+    input.next === CHAR_DQUOTE &&
+    !isWhitespace(input.peek(-1)) &&
     stack.canShift(terms.immediate_quote)
   ) {
     input.acceptToken(terms.immediate_quote, 1);

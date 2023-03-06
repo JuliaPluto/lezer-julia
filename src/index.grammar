@@ -1,10 +1,9 @@
 @precedence {
-  interp
+  interpolation
   immediate
   symbol
 
   imports
-  imports-2
   renamed-import @right
 
   subscript
@@ -45,6 +44,8 @@
   something-statement
   return
 
+  array
+
   baretuple
   assign @right
   arrow @right
@@ -52,21 +53,14 @@
   macro-argument
   macro
 
-  array
   array-comprehension
 
-  // This makes it so `[a $b]` is parsed correctly,
-  // but it makes `[a $ b]` not work, sadly.
-  // But I care more about the former 🤷‍♀️
   matrix
-  plus_but_sometimes_interpolation @right
 
   for-statement
   statement @right
 
   right0 @right
-  regular0
-  regular-1
 } 
 
 @top SourceFile {
@@ -78,19 +72,20 @@
 expression {  
   blocky_things |
   definition |
-  MacroExpression |
+  MacroExpression | 
   FunctionExpression |
-  CallExpression |
-
   // TODO Imports is slow!
   import_expressions |
+  CallExpression |
   
   Identifier |
   boolean |
   Character |
   Number |
-  String |
   Symbol |
+  String |
+  TripleString |
+  CommandString |
 
   CoefficientExpression |
   UnaryExpression |
@@ -100,33 +95,29 @@ expression {
   SpreadExpression |
   Where |
   LonelyType |
-  Operator ~op |
+  Operator |
   BeginIndex |
   EndIndex |
 
   InterpolationExpression |
   FieldExpression |
   TransposeExpression |
-  SubscriptExpression |
   QuoteExpression |
-  TripleString |
-  CommandString |
   PrefixedString |
+
+  SubscriptExpression |
+  TypedMatrixExpression |
+  TypedArrayComprehensionExpression |
   
   // NOTE TupleExpression actually makes lezer generate FASTER?
   TupleExpression |
   GeneratorExpression |
-  ArrayExpression |
-  ArrayComprehensionExpression |
-  MatrixExpression |
-  MatrixExpressionWithOnlySemicolons |
   
-  // TODO Discontinued vector might/is still used by some macros
+  square_bracket_stuff |
+  // NOTE Discontinued vector might/is still used by some macros
   // .... but it also adds a couple of seconds to the build...
-  // .... So changed it for TypeArgumentList for now...
-  // .... Not fully accurate, but acurate enough?
-  TypeArgumentList |
-
+  discontinued_vector_syntax |
+  
   TypedExpression |
   ParameterizedIdentifier | 
   
@@ -215,25 +206,25 @@ blocky_things {
 // TODO Look into how closedBy and openedBy is
 // .... interpreted by the codemirror extension.
 IfStatement_Pro {
-  blockkw<"if", "else elseif end"> 
+  blockopen<"if", "else elseif end"> 
   IfClause { expression }
     expressionList
   (
     // TODO Should have openedBy="if elseif" too?
-    blockkw<"elseif", "else elseif end">
+    blockcontinue<"elseif", "else elseif end">
     ElseIfClause { expression }
     expressionList
   )*
   (
     // TODO Should have openedBy "if elseif"?
-    blockkw<"else", "end">
+    blockcontinue<"else", "end">
     ElseClause { expressionList }
   )?
   end
 }
 
 IfStatement {
-  IfClause { kw<"if"> expression }
+  IfClause { blockopen<"if", "end"> expression }
     expressionList
   ElseifClause*
   ElseClause?
@@ -249,26 +240,25 @@ ElseClause {
 }
 
 TryCatchFinally[@name="TryStatement"] {
-  blockkw<"try", "catch finally end">
+  blockopen<"try", "catch finally end">
   expressionList
   Catch?
   Finally?
   end
 }
 Catch[@name="CatchClause"] {
-  blockkw<"catch", "finally end">
+  blockcontinue<"catch", "finally end">
   (CatchBinding { Identifier } | terminator)
   expressionList
 }
 Finally[@name="FinallyClause"] {
-  blockkw<"finally", "end">
+  blockcontinue<"finally", "end">
   expressionList
 }
 
-// TODO Should the `in`s be closedBy/openedBy too?
 ForStatement {
   !for-statement
-  blockkw<"for", "end">
+  blockopen<"for", "end">
   ForBinding
   ("," ForBinding)*
   expressionList
@@ -276,7 +266,7 @@ ForStatement {
 }
 
 WhileStatement {
-  blockkw<"while", "end"> WhileBinding { expression }
+  blockopen<"while", "end"> WhileBinding { expression }
     expressionList
   end
 }
@@ -290,12 +280,11 @@ ContinueStatement {
 }
 
 ReturnStatement {
-  // kw<"return"> (!return statement)? terminator
   kw<"return"> (!return statement)?
 }
 
 LetStatement {
-  blockkw<"let", "end">
+  blockopen<"let", "end">
   LetBinding {
     (expression | AssignmentExpression)
     ("," (expression | AssignmentExpression))*
@@ -318,7 +307,7 @@ LocalStatement {
 }
 
 QuoteStatement {
-  blockkw<"quote", "end">
+  blockopen<"quote", "end">
   expressionList
   end
 }
@@ -332,34 +321,36 @@ import_expressions {
   ExportStatement
 }
 
-importable {
-  Identifier |
-  MacroIdentifier |
-  Operator
-}
-
 ImportStatement {
   (kw<"using"> | kw<"import">)
-  (Imports | SelectedImport)
+  (imports | SelectedImport)
 }
 ExportStatement {
-  kw<"export"> importable (!right0 "," importable)*
+  kw<"export"> import_identifier (!right0 "," import_identifier)*
 }
 
 dot { "." | immediate_dot }
 
-Import {
-  RelativeDots { !imports-2 (!imports-2 dot !imports-2)+ }?
-  Property { importable !imports-2 dot }*
-  // importable
-  Name { importable }
-  Rename { kw<"as"> importable }? 
+import_identifier {
+  MacroIdentifier |
+  Operator |
+  Identifier { word } |
+  InterpolationExpression
 }
-Imports {
-  Import (!imports "," Import)*
+import_path {
+  import_identifier |
+  ImportFieldExpression { import_path !macro dot import_identifier } |
+  RelativeImport { dot import_path }
+}
+import {
+  import_path |
+  RenamedImport { import_path kw<"as"> import_identifier }
+}
+imports {
+  import (!imports "," import)*
 }
 SelectedImport {
-  Import !renamed-import immediate_colon Imports
+  import_path !renamed-import immediate_colon Imports { imports }
 }
 
 // DEFINITIONS
@@ -376,76 +367,52 @@ definition {
 }
 Definition { expression }
 FunctionDefinition {
-  !regular0 blockkw<"function", "end">
-    Definition
-    expressionList
-  end
+  blockopen<"function", "end"> Definition expressionList end
 }
 MacroDefinition {
-  blockkw<"macro", "end"> Definition
-    expressionList
-  end
+  blockopen<"macro", "end"> Definition expressionList end
 }
-
 PrimitiveDefinition {
    "primitive type" Definition Number end
 }
-
 AbstractDefinition {
   "abstract type" Definition end
 }
-
 StructDefinition {
-  blockkw<"struct", "end"> Definition
-    expressionList
-  end
+  blockopen<"struct", "end"> Definition expressionList end
 }
 MutableStructDefinition {
-  "mutable struct"
-  // blockkw<"mutable", "end"> blockkw<"struct", "end">
-  Definition
-    expressionList
-  end
+  "mutable struct" Definition expressionList end
 }
-
-
 ModuleDefinition {
-  blockkw<"module", "end"> Definition
-    expressionList
-  end
+  blockopen<"module", "end"> Definition expressionList end
 }
-
 BareModuleDefinition {
-  blockkw<"baremodule", "end"> Definition
-    expressionList
-  end
+  blockopen<"baremodule", "end"> Definition expressionList end
 }
 
-// @dynamicPrecedence to make this prefered over `Identifier TypeArgumentList`
-ParameterizedIdentifier[@dynamicPrecedence=1] {
+ParameterizedIdentifier {
   expression
   !type-parameters
-  ImmediateTypeArgumentList
-}
-ImmediateTypeArgumentList[@name="TypeArgumentList"] {
-  immediate_brace inner_tuple "}"
+  TypeArgumentList
 }
 TypeArgumentList {
-  "{" inner_tuple "}"
+  immediate_brace inner_tuple "}"
 }
 
 FieldName { word }
 
 FieldExpression {
   expression
+  !immediate
   immediate_dot
   (FieldName | Symbol | QuoteExpression | InterpolationExpression)
 }
 
-begindex_start[@export="begindex_start"] { 
+begindex_start[@name="[",begindexing="["] { 
   immediate_bracket
 }
-begindex_end[@export="begindex_end"] { 
+begindex_end[@name="]",begindexing="]"] { 
   "]"
 }
 
@@ -453,9 +420,36 @@ SubscriptExpression {
   expression
   !subscript
   begindex_start // [
-  inner_tuple
+  array_inner
   begindex_end // ]
 }
+TypedArrayComprehensionExpression {
+  expression
+  !subscript
+  ArrayComprehensionExpression {
+    begindex_start // [
+    list_comprehension
+    begindex_end // ]
+  }
+}
+TypedMatrixExpression {
+  expression
+  !subscript
+  MatrixExpression {
+    begindex_start // [
+    matrix_inner
+    begindex_end // ]
+  }
+}
+
+  // ArrayExpression { "[" array_inner? "]" } |
+  // ArrayComprehensionExpression { "[" list_comprehension "]" } |
+  // MatrixExpression { "[" matrix_inner "]" } |
+  // // This is SO STUPID but because I love being extremely complete...
+  // // Julia allows `[;;;]` but only if there is nothing between the semicolons,
+  // // no expressions, no commas, no spaces, NO NOTHING
+  // MatrixExpressionWithOnlySemicolons { "[" semicolons_without_spaces "]" }
+
 
 SpreadExpression {
   expression !dot "..."
@@ -502,8 +496,11 @@ CoefficientExpression {
   Coefficient {
     // Need to investigate what `!coefficient` here does
     !coefficient nowhitespace expression |
-    ParenthesizedInsideCoefficient[@name="ParenthesizedExpression"] {
+    TupleInsideCoefficient[@name="TupleExpression"] {
       immediate_paren inner_tuple ")"
+    } |
+    ParenthesizedInsideCoefficient[@name="ParenthesizedExpression"] {
+      immediate_paren inner_paren ")"
     }
   }
 }
@@ -518,23 +515,28 @@ CallExpression[@dynamicPrecedence=1] {
 }
 
 DoClause {
-  blockkw<"do", "end"> 
+  blockopen<"do", "end"> 
   (
-    // Disabled this for now... broke a lot of odd things...
-    // Like with `expression` here it parsed `asd::Vector{Bar}`
-    // as `(asd::Vector){Bar}` but it should be (asd)::Vector{Bar}`
-    // SO ODD!! WHAT DO DOCLAUSEARGUMENTS HAVE TO DO WITH THAT!
-    //
     DoClauseArguments { expression ("," expression)* } |
-    // DoClauseArguments { do_clause_argument ("," do_clause_argument)* } |
     terminator
   )
   expressionList
   end
 }
 
-ListCompherension {
-  expression comprehensionClause
+list_comprehension {
+  expression
+  !forbinding
+  ForClause {
+    kw<"for"> ForBinding (!forbinding "," ForBinding)*
+    // TODO Rename to `Filter`? :D
+    Filter[@name="IfClause"] { kw<"if"> expression }*
+  }+
+}
+ForBinding {
+  expression
+  AssignOperator { !immediate kw<"in"> | operator<"="> | operator<"∈"> }
+  expression
 }
 
 
@@ -546,22 +548,19 @@ LonelyType {
 //////////
 // Quoting and interpolation
 //////////
-InterpolationExpression[@name=Interpolation, @dynamicPrecedence=10] {
-  interpolationStart expression interpolationEnd |
-  // TODO Make this "$" also InterpolationStart?
-  interpolation_start symbol_name
+InterpolationExpression[@name="Interpolation", @dynamicPrecedence=10] {
+  interpolationStart inner_paren interpolationEnd |
+  interpolation_start !interpolation symbol_name |
+  TupleExpression[@dynamicPrecedence=-1] {
+    interpolationStart inner_tuple interpolationEnd
+  }
+
 }
 
 Symbol {
-  // TODO Make this ":" also QuoteStart?
   symbol_start !symbol symbol_name
 }
 symbol_name {
-  // The reason Symbol and QuoteExpression can co-exist is because
-  // Symbol matches on `word`, which is just like identifier BUT
-  // will match earlier... so Symbol will "snatch" all the
-  // wordy symbols right from QuoteNode...
-  // TODO Don't think this distinction is useful though
   Identifier { word } |
   Number |
   String |
@@ -569,8 +568,6 @@ symbol_name {
   // So assign operators are special because you can't use them as
   // normal identifiers e.g. `+` is valid code, `+=` isn't, while `:+=` is!
   AssignOperatorAsSymbols[@name=Operator] { assignOperator }
-  // TODO Allow all operators here explicitly so they get tagged as
-  // .... Symbol rather than QuoteExpression (if we keep the distinction)
 }
 
 QuoteExpression[@name=Quote,@dynamicPrecedence=10] {
@@ -587,15 +584,13 @@ QuoteExpression[@name=Quote,@dynamicPrecedence=10] {
 // Tuples, arguments and ParenthesizedExpression
 ////////////
 tuple_section {
+  ListCompherension { list_comprehension } |
+  (expression | AssignmentExpression)
+  ~tuple-vs-parens
   (
-    ListCompherension |
-    (expression | AssignmentExpression)
-    ~tuple-vs-parens
-    (
-      ("," (expression | AssignmentExpression))*
-      ("," ListCompherension?)?
-    )?
-  )
+    ("," (expression | AssignmentExpression))*
+    ("," ListCompherension { list_comprehension }?)?
+  )?
 }
 inner_tuple {
   tuple_section?
@@ -631,37 +626,27 @@ ParenthesizedExpression[@dynamicPrecedence=1] {
   "(" inner_paren ")"
 }
 GeneratorExpression {
-  "(" ListCompherension !single-is-special ")"
-}
-
-// This shouldn't have tuple semantics,
-// but matrix/array semantics!
-DiscontinuedVector {
-  "{" inner_tuple "}"
+  "(" list_comprehension !single-is-special ")"
 }
 
 //////////////
 // Macros!
 /////////////
-
 MacroExpression[@dynamicPrecedence=10] {
   (MacroIdentifier | MacroFieldExpression)
-  (
-    with_parens[@dynamicPrecedence=1] {
-      // @use_memo([]) do; ... end
-      !macro ArgumentList
-    } | 
-    with_typed_arguments[@dynamicPrecedence=1] {
-       // @NamedTuple{x::Int}
-      !macro ImmediateTypeArgumentList
-    } |
-    !macro MacroArgumentList // Lame, normal macro call pfffft
+  (    
+    // @use_memo([]) do; ... end
+    !immediate ArgumentList | 
+    // @NamedTuple{x::Int}
+    !immediate TypeArgumentList |
+    // Lame, normal macro call pfffft
+    MacroArgumentList { (!macro-argument statement)+ }
   )?
 }
 
 MacroFieldExpression {
   expression !immediate immediate_dot MacroIdentifier  |
-  MacroIdentifier !immediate immediate_dot Identifier
+  MacroIdentifier !immediate immediate_dot Identifier { word }
 }
 
 MacroIdentifier {
@@ -673,10 +658,6 @@ MacroIdentifier {
     // TODO ".." should be here too, but conflicts with `import ..X`
     Operator[group="operator"] { "." }
   }
-}
-
-MacroArgumentList {
-  (!macro-argument statement)+
 }
 
 FunctionExpression {
@@ -704,10 +685,9 @@ BinaryExpression {
   // TODO Ideally we have ".." here too, but it causes too much
   // .... headaches to combine it with imports >_>
   // expression !colon (colon_operator | "..") expression |
-  expression !colon (colon_operator) expression |
+  expression !colon colon_operator expression |
   expression !times timesOperator expression |
-  expression !plus plusOperator expression |
-  expression !plus_but_sometimes_interpolation "$" expression |
+  expression !plus (plusOperator | "$") expression |
   expression !arrow arrowOperator expression |
   expression !pipeback pipe_ltr expression |
   expression !pipe pipe_rtl expression |
@@ -717,76 +697,61 @@ BinaryExpression {
 }
 
 UnaryExpression {
-  OperatorInUnaryExpression[@name=Operator] { unaryOperatorExtra | plusminus } ~op !unary expression
+  (unaryOperatorExtra | plusminus)
+  !unary
+  expression
 }
 
 Operator[group="operator"] {
-  // !regular0 (    
-    "$" |
-    bitshiftOperator |
-    unaryOperatorExtra |
-    plusOperator |
-    timesOperator |
-    powerOperator |
-    comparisonOperator |
-    arrowOperator |
-    contains_operator |
-    pipe_ltr |
-    pipe_rtl |
-    colon_operator
-  // )
+  bitshiftOperator |
+  unaryOperatorExtra |
+  plusOperator |
+  timesOperator |
+  powerOperator |
+  comparisonOperator |
+  arrowOperator |
+  contains_operator |
+  pipe_ltr |
+  pipe_rtl |
+  interpolation_start |
+  colon_operator
 }
 
-ArrayExpression {
-  "[" "]" |
-  "[" expression !array ("," expression)* (",")? "]"
+//////////////
+// Everything inside square brackets (`[` and `]`)
+/////////////
+square_bracket_stuff {
+  ArrayExpression { "[" array_inner? "]" } |
+  ArrayComprehensionExpression { "[" list_comprehension "]" } |
+  MatrixExpression { "[" matrix_inner "]" } |
+  // This is SO STUPID but because I love being extremely complete...
+  // Julia allows `[;;;]` but only if there is nothing between the semicolons,
+  // no expressions, no commas, no spaces, NO NOTHING
+  MatrixExpressionWithOnlySemicolons { "[" semicolons_without_spaces "]" }
 }
 
-// I have this defined in tokens as well...
-// Not sure which is better, having the semicolons as one token
-// or as x semicolon tokens.
-// semicolons_without_spaces[@name="Semicolons"] { ";" (nowhitespace ";")* }
-
-MatrixExpression{
-  "["
-  !regular-1
+matrix_inner {
   MatrixRow
-  (semicolons_without_spaces MatrixRow)* 
-  semicolons_without_spaces?
-  !regular-1
-  "]"
+  (terminator+ MatrixRow)* 
+  terminator*
+}
+MatrixRow { (!matrix statement)+ }
+array_inner {
+  expression !array ("," !array expression)* (",")?
 }
 
-// This is SO STUPID but because I love being extremely complete...
-// Julia allows `[;;;]` but only if there is nothing between the semicolons,
-// no expressions, no commas, no spaces, NO NOTHING
-MatrixExpressionWithOnlySemicolons {
-  "[" semicolons_without_spaces "]"
+//////////////
+// Everything inside braces (`{` and `}`)
+// Which is the same as `[` and `]`
+/////////////
+discontinued_vector_syntax {
+  OldVectorExpression { "{" array_inner? "}" } |
+  OldVectorComprehensionExpression { "{" list_comprehension "}" } |
+  OldMatrixExpression { "{" matrix_inner "}" } |
+  OldMatrixExpressionWithOnlySemicolons { "{" semicolons_without_spaces "}" }
 }
 
-MatrixRow {
-  (!matrix expression)+
-}
 
-ArrayComprehensionExpression {
-  "[" !array-comprehension expression !array-comprehension comprehensionClause "]"
-}
-
-comprehensionClause {
-  ForClause (ForClause | IfClause)*
-}
-
-IfClause {
-  kw<"if"> expression
-}
-
-ForClause {
-    kw<"for"> ForBinding (!forbinding "," ForBinding)*
-}
-
-ForBinding {
-  expression AssignOperator { !immediate kw<"in"> | operator<"="> | operator<"∈"> } expression
-}
 
 // Even though it is technically "just an unary expression",
 // I'm keeping this separate because it needs immediate_single_quote
@@ -818,7 +783,7 @@ TransposeExpression {
 }
 
 Interpolation {
-  "$" Identifier |
+  "$" Identifier { word } |
   interpolationStart expression interpolationEnd
 }
 
@@ -832,29 +797,55 @@ PrefixedString {
   Prefix { expression !prefix }
   (
     String { immediate_quote StringWithoutInterpolation } |
-    String { immediate_triple_quote TripleStringWithoutInterpolation } |
-    String { immediate_back_quote CommandStringWithoutInterpolation }
+    TripleString { immediate_triple_quote TripleStringWithoutInterpolation } |
+    CommandString { immediate_back_quote CommandStringWithoutInterpolation }
   )
-  // Suffix { !suffix Suffix }?
+  Suffix { nowhitespace word }?
 }
 
 operator<term> { [@name={term},group="operator"]{ term } } 
 kw<term> { @specialize[@name={term},group="keyword"]<Identifier, term> }
-blockkw<term, cc> { @specialize[@name={term},closedBy={cc},group="keyword"]<Identifier, term> }
+
+blockopen<term, cc> {
+  @specialize[
+    @name={term},
+    closedBy={cc},
+    group="controlKeyword",
+    begindexing="begin"
+  ]<Identifier, term>
+}
+blockcontinue<term, cc> {
+  @specialize[
+    @name={term},
+    closedBy={cc},
+    group="controlKeyword"
+  ]<Identifier, term>
+}
 boolean { @specialize[@name=BooleanLiteral]<Identifier, "true" | "false"> }
 
 @context trackIsIndexing from "./begindexing.tokens.js"
+@external prop begindexing from "./begindexing.tokens.js"
 @external specialize {Identifier} begin_end_but_cool from "./begindexing.tokens.js" {
-  begin[@name="begin", group="keyword", closedBy="end"]
+  begin[
+    @name="begin",
+    group="keyword",
+    closedBy="end",
+    begindexing="begin"
+  ]
   BeginIndex
-  end[@name="end", group="keyword", openedBy="quote begin if else elseif let try catch finally for while do function struct macro module baremodule struct mutable_struct abstract_type primitive_type"]
+  end[
+    @name="end",
+    group="keyword",
+    openedBy="quote begin if else elseif let try catch finally for while do function struct macro module baremodule struct mutable_struct abstract_type primitive_type",
+    begindexing="end"
+  ]
   EndIndex
 }
 
 // This needs to be above the other immediate_x tokens,
 // specifically `immediate_paren`
 @external tokens nowhitespace from "./index.tokens.js" {
-  // ONLY USE FOR COEFFECIENT!!!
+  // ONLY USE FOR COEFFICIENT OR SUFFIX!!!
   // This is a very isolated case, just after numbers or tranpose, which is okay for now.
   // Ideally, think of a way to make it without nowhitespace
   nowhitespace
@@ -876,7 +867,7 @@ boolean { @specialize[@name=BooleanLiteral]<Identifier, "true" | "false"> }
   symbol_start[@name=":"]
 }
 
-terminator[@export="terminator"] { newline | ";" }
+terminator[@export="terminator"] { newline | semicolons_without_spaces }
 
 @external tokens newline from "./index.tokens.js" { newline }
 
@@ -889,23 +880,11 @@ terminator[@export="terminator"] { newline | ";" }
 @external tokens stringContentWithoutInterpolation from "./index.tokens.js" { stringContentWithoutInterpolation }
 @external tokens commandStringContentWithoutInterpolation from "./index.tokens.js" { commandStringContentWithoutInterpolation }
 
-// @external tokens operators from "./all_these_operators.tokens.js" {
-//   comparisonOperator,
-//   arrowOperator,
-//   timesOperator,
-//   plusOperatorExtra,
-//   powerOperator
-// } 
-
 plusOperator {
   plusOperatorExtra | plusminus
 }
 
 @tokens {
-  // These are to export them to the begindexing context tracker
-  "["[@export="BracketL"] 
-  "]"[@export="BracketR"] 
-
   // Can implement strings in pure-lezer too?
   // Still have this commented out because feels odd that it works...
   // Also fixed the ExternalTokenizer so no need to fix this yet.
@@ -939,59 +918,45 @@ plusOperator {
     )
     ($[eE] ("-" | "+")? $[0-9]+)?
   }
-  powerOperator {
+  powerOperator[@name="^"] {
     "."? ("^" | "↑" | "↓" | "⇵" | "⟰" | "⟱" | "⤈" | "⤉" | "⤊" | "⤋" | "⤒" | "⤓" | "⥉" | "⥌" | "⥍" | "⥏" | "⥑" | "⥔" | "⥕" | "⥘" | "⥙" | "⥜" | "⥝" | "⥠" | "⥡" | "⥣" | "⥥" | "⥮" | "⥯" | "￪" | "￬")
   }
-  timesOperator {
+  timesOperator[@name="*"] {
     "."? ("*" | "/" | "÷" | "%" | "&" | "⋅" | "∘" | "×" | "\\" | "∩" | "∧" | "⊗" | "⊘" | "⊙" | "⊚" | "⊛" | "⊠" | "⊡" | "⊓" | "∗" | "∙" | "∤" | "⅋" | "≀" | "⊼" | "⋄" | "⋆" | "⋇" | "⋉" | "⋊" | "⋋" | "⋌" | "⋏" | "⋒" | "⟑" | "⦸" | "⦼" | "⦾" | "⦿" | "⧶" | "⧷" | "⨇" | "⨰" | "⨱" | "⨲" | "⨳" | "⨴" | "⨵" | "⨶" | "⨷" | "⨸" | "⨻" | "⨼" | "⨽" | "⩀" | "⩃" | "⩄" | "⩋" | "⩍" | "⩎" | "⩑" | "⩓" | "⩕" | "⩘" | "⩚" | "⩜" | "⩞" | "⩟" | "⩠" | "⫛" | "⊍" | "▷" | "⨝" | "⟕" | "⟖" | "⟗")
   }
-  plusOperatorExtra {
-    "."? ("|||" | "⊕" | "⊖" | "⊞" | "⊟" | "|++|" | "∪" | "∨" | "⊔" | "±" | "∓" | "∔" | "∸" | "≏" | "⊎" | "⊻" | "⊽" | "⋎" | "⋓" | "⧺" | "⧻" | "⨈" | "⨢" | "⨣" | "⨤" | "⨥" | "⨦" | "⨧" | "⨨" | "⨩" | "⨪" | "⨫" | "⨬" | "⨭" | "⨮" | "⨹" | "⨺" | "⩁" | "⩂" | "⩅" | "⩊" | "⩌" | "⩏" | "⩐" | "⩒" | "⩔" | "⩖" | "⩗" | "⩛" | "⩝" | "⩡" | "⩢" | "⩣")
+  plusOperatorExtra[@name="⊕"] {
+    "."? ("|" | "⊕" | "⊖" | "⊞" | "⊟" | "|++|" | "∪" | "∨" | "⊔" | "±" | "∓" | "∔" | "∸" | "≏" | "⊎" | "⊻" | "⊽" | "⋎" | "⋓" | "⧺" | "⧻" | "⨈" | "⨢" | "⨣" | "⨤" | "⨥" | "⨦" | "⨧" | "⨨" | "⨩" | "⨪" | "⨫" | "⨬" | "⨭" | "⨮" | "⨹" | "⨺" | "⩁" | "⩂" | "⩅" | "⩊" | "⩌" | "⩏" | "⩐" | "⩒" | "⩔" | "⩖" | "⩗" | "⩛" | "⩝" | "⩡" | "⩢" | "⩣")
   }
-  arrowOperator {
+  arrowOperator[@name="-->"] {
     "."?  ("-->" | "←" | "→" | "↔" | "↚" | "↛" | "↞" | "↠" | "↢" | "↣" | "↦" | "↤" | "↮" | "⇎" | "⇍" | "⇏" | "⇐" | "⇒" | "⇔" | "⇴" | "⇶" | "⇷" | "⇸" | "⇹" | "⇺" | "⇻" | "⇼" | "⇽" | "⇾" | "⇿" | "⟵" | "⟶" | "⟷" | "⟹" | "⟺" | "⟻" | "⟼" | "⟽" | "⟾" | "⟿" | "⤀" | "⤁" | "⤂" | "⤃" | "⤄" | "⤅" | "⤆" | "⤇" | "⤌" | "⤍" | "⤎" | "⤏" | "⤐" | "⤑" | "⤔" | "⤕" | "⤖" | "⤗" | "⤘" | "⤝" | "⤞" | "⤟" | "⤠" | "⥄" | "⥅" | "⥆" | "⥇" | "⥈" | "⥊" | "⥋" | "⥎" | "⥐" | "⥒" | "⥓" | "⥖" | "⥗" | "⥚" | "⥛" | "⥞" | "⥟" | "⥢" | "⥤" | "⥦" | "⥧" | "⥨" | "⥩" | "⥪" | "⥫" | "⥬" | "⥭" | "⥰" | "⧴" | "⬱" | "⬰" | "⬲" | "⬳" | "⬴" | "⬵" | "⬶" | "⬷" | "⬸" | "⬹" | "⬺" | "⬻" | "⬼" | "⬽" | "⬾" | "⬿" | "⭀" | "⭁" | "⭂" | "⭃" | "⭄" | "⭇" | "⭈" | "⭉" | "⭊" | "⭋" | "⭌" | "￩" | "￫" | "⇜" | "⇝" | "↜" | "↝" | "↩" | "↪" | "↫" | "↬" | "↼" | "↽" | "⇀" | "⇁" | "⇄" | "⇆" | "⇇" | "⇉" | "⇋" | "⇌" | "⇚" | "⇛" | "⇠" | "⇢")
   }
-  bitshiftOperator {
+  bitshiftOperator[@name=">>"] {
     "."? (">>" | "<<" | ">>>")
   }
-  pairOperator {
+  pairOperator[@name="=>"] {
     "."? "=>"
   }
-  comparisonOperator {
+  comparisonOperator[@name="=="] {
     "."?  ("<:" | ">" | "<" | ">=" | "≥" | "<=" | "≤" | "==" | "===" | "≡" | "!=" | "≠" | "!==" | "≢" | "∈" | "∉" | "∋" | "∌" | "⊆" | "⊈" | "⊂" | "⊄" | "⊊" | "∝" | "∊" | "∍" | "∥" | "∦" | "∷" | "∺" | "∻" | "∽" | "∾" | "≁" | "≃" | "≂" | "≄" | "≅" | "≆" | "≇" | "≈" | "≉" | "≊" | "≋" | "≌" | "≍" | "≎" | "≐" | "≑" | "≒" | "≓" | "≖" | "≗" | "≘" | "≙" | "≚" | "≛" | "≜" | "≝" | "≞" | "≟" | "≣" | "≦" | "≧" | "≨" | "≩" | "≪" | "≫" | "≬" | "≭" | "≮" | "≯" | "≰" | "≱" | "≲" | "≳" | "≴" | "≵" | "≶" | "≷" | "≸" | "≹" | "≺" | "≻" | "≼" | "≽" | "≾" | "≿" | "⊀" | "⊁" | "⊃" | "⊅" | "⊇" | "⊉" | "⊋" | "⊏" | "⊐" | "⊑" | "⊒" | "⊜" | "⊩" | "⊬" | "⊮" | "⊰" | "⊱" | "⊲" | "⊳" | "⊴" | "⊵" | "⊶" | "⊷" | "⋍" | "⋐" | "⋑" | "⋕" | "⋖" | "⋗" | "⋘" | "⋙" | "⋚" | "⋛" | "⋜" | "⋝" | "⋞" | "⋟" | "⋠" | "⋡" | "⋢" | "⋣" | "⋤" | "⋥" | "⋦" | "⋧" | "⋨" | "⋩" | "⋪" | "⋫" | "⋬" | "⋭" | "⋲" | "⋳" | "⋴" | "⋵" | "⋶" | "⋷" | "⋸" | "⋹" | "⋺" | "⋻" | "⋼" | "⋽" | "⋾" | "⋿" | "⟈" | "⟉" | "⟒" | "⦷" | "⧀" | "⧁" | "⧡" | "⧣" | "⧤" | "⧥" | "⩦" | "⩧" | "⩪" | "⩫" | "⩬" | "⩭" | "⩮" | "⩯" | "⩰" | "⩱" | "⩲" | "⩳" | "⩵" | "⩶" | "⩷" | "⩸" | "⩹" | "⩺" | "⩻" | "⩼" | "⩽" | "⩾" | "⩿" | "⪀" | "⪁" | "⪂" | "⪃" | "⪄" | "⪅" | "⪆" | "⪇" | "⪈" | "⪉" | "⪊" | "⪋" | "⪌" | "⪍" | "⪎" | "⪏" | "⪐" | "⪑" | "⪒" | "⪓" | "⪔" | "⪕" | "⪖" | "⪗" | "⪘" | "⪙" | "⪚" | "⪛" | "⪜" | "⪝" | "⪞" | "⪟" | "⪠" | "⪡" | "⪢" | "⪣" | "⪤" | "⪥" | "⪦" | "⪧" | "⪨" | "⪩" | "⪪" | "⪫" | "⪬" | "⪭" | "⪮" | "⪯" | "⪰" | "⪱" | "⪲" | "⪳" | "⪴" | "⪵" | "⪶" | "⪷" | "⪸" | "⪹" | "⪺" | "⪻" | "⪼" | "⪽" | "⪾" | "⪿" | "⫀" | "⫁" | "⫂" | "⫃" | "⫄" | "⫅" | "⫆" | "⫇" | "⫈" | "⫉" | "⫊" | "⫋" | "⫌" | "⫍" | "⫎" | "⫏" | "⫐" | "⫑" | "⫒" | "⫓" | "⫔" | "⫕" | "⫖" | "⫗" | "⫘" | "⫙" | "⫷" | "⫸" | "⫹" | "⫺" | "⊢" | "⊣" | "⟂")
   }
   assignOperator {
-    ":=" | "."? ("~" | "=" | "+=" | "-=" | "*=" | "/=" | "//=" | "|=|" | "^=" | "÷=" | "%=" | "<<=" | ">>=" | ">>>=" | "||=|" | "&=" | "⊻=" | "≔" | "⩴" | "≕")
+    ":=" | "."? ("~" | "+=" | "-=" | "*=" | "/=" | "//=" | "|=|" | "^=" | "÷=" | "%=" | "<<=" | ">>=" | ">>>=" | "||=|" | "&=" | "⊻=" | "≔" | "⩴" | "≕")
   }
-  unaryOperatorExtra {
+  unaryOperatorExtra[@name="!"] {
     "."? (">:" | "!" | "~" | "¬" | "√" | "∛" | "∜")
   }
-  plusminus {
-    "."? ("+" | "-" | "|")
+  plusminus[@name="+"] {
+    "."? ("+" | "-")
   }
   Character {
     "'" ("\\" !['] | ![']) "'"
-  }
-
-  operator_token {
-    bitshiftOperator |
-    unaryOperatorExtra |
-    plusOperator |
-    timesOperator |
-    powerOperator |
-    comparisonOperator |
-    arrowOperator |
-    contains_operator |
-    pipe_ltr |
-    pipe_rtl |
-    colon_operator
   }
 
   pipe_ltr[@name="pipe<"] { "<|" | ".<|" }
   pipe_rtl[@name="pipe>"] { "|>" | ".|>" }
 
   // semicolons_without_spaces[@name="Semicolons"] { ";"+ }
-  semicolons_without_spaces { ";"+ }
+  semicolons_without_spaces[@name=";"] { ";"+ }
   
   ternary1 {
     whitespace+ "?" whitespace+
@@ -1000,15 +965,14 @@ plusOperator {
     whitespace+ ":" whitespace+
   }
 
-  // TODO Uncomment this so these will actually show up
-  // .... in the tree and not be hidden blegh
-  "(" ")" "{" "}" "[" "]" ";" "," "..." "." "$" "@"
+  "(" ")" "{" "}" "[" "]"
+  ";" "," "." "..." "$" "@" "\""
 
   "="
 
-  "abstract type"[@name="abstract_type", group="keyword", closedBy="end"]
-  "primitive type"[@name="primitive_type", group="keyword", closedBy="end"]
-  "mutable struct"[@name="mutable_struct", group="keyword", closedBy="end"]
+  "abstract type"[@name="abstract_type", group="keyword", closedBy="end", begindexing="begin"]
+  "primitive type"[@name="primitive_type", group="keyword", closedBy="end", begindexing="begin"]
+  "mutable struct"[@name="mutable_struct", group="keyword", closedBy="end", begindexing="begin"]
 
   quoteStart[@name=":(", closedBy=")"] { ":(" }
   quoteEnd[@name=")", openedBy=":("] { ")" }
@@ -1017,12 +981,14 @@ plusOperator {
   interpolationEnd[@name=")", openedBy="$("] { ")" }
   
   @precedence {
-    "||"
-    plusOperator
-  }
-  @precedence {
     "∈"
-    comparisonOperator
+    comparisonOperator // "<" and "!="
+  }
+
+  @precedence {
+    ternary1
+    ternary2
+    whitespace
   }
   
   @precedence {
@@ -1032,14 +998,15 @@ plusOperator {
     // <: and < will fight over who should be chosen,
     // and if possible it should always be <: (not gonna have a range expression with `<` sadly)
     "<:",
-    unaryOperatorExtra
-    comparisonOperator,
-    "=",
-    assignOperator,
-    plusOperatorExtra,
-    ".",
-    ternary1,
-    ternary2,
+    unaryOperatorExtra // "!" and "~"
+    comparisonOperator // "<" and "!="
+    "="
+    // TODO Make "~" it's own token so it can be 
+    assignOperator // "~"
+    plusOperatorExtra
+    "."
+    ternary1
+    ternary2
     whitespace
   }
 }

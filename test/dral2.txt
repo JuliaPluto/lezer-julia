@@ -33,7 +33,7 @@ SourceFile(CallExpression(Operator,ArgumentList(BooleanLiteral,BooleanLiteral,Bo
 # Broadcast-dot-operator
 .!isnan.([1,2,3])
 ==>
-SourceFile(UnaryExpression(Operator,CallExpression(Identifier,BroadcastDot,ArgumentList(ArrayExpression(Number,Number,Number)))))
+SourceFile(UnaryExpression("!",CallExpression(Identifier,BroadcastDot,ArgumentList(ArrayExpression(Number,Number,Number)))))
 
 # Just operators hanging out
 !
