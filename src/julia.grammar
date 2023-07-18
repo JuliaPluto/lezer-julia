@@ -24,9 +24,12 @@
   pair @right
   afunc @right
 
+  vec
   tup // Comma outside parentheses (OpenTuple)
   assignment @right
   simple @right
+  mat
+  macro
 }
 
 @skip { _ws | LineComment | BlockComment }
@@ -59,7 +62,10 @@ expr {
       (primary-expr | FloatLiteral | IntegerLiteral)
       !juxt immediateIdentifier primary-expr
     }
-  // | OpenMacrocall // TODO
+  | OpenMacrocallExpr {
+      MacroIdentifier
+      MacroArguments { macro-arg[@dynamicPrecedence=-1] { (!macro top-level) }+ }?
+    }
   )
 }
 
@@ -78,7 +84,8 @@ importable {
   )
 }
 
-simple-statement {
+// Use dynamic precedence so keywords in macros don't parse as identifiers.
+simple-statement[@dynamicPrecedence=1] {
   ( BreakStmt { kw<'break'> }
   | ContinueStmt { kw<'continue'> }
   | ReturnStmt { kw<'return'> !simple (expr | OpenTuple) }
@@ -95,7 +102,7 @@ ElseClause { kw<'else'> block? }
 CatchClause { kw<'catch'> Identifier _t block? }
 FinallyClause { kw<'finally'> block? }
 
-compound-statement {
+compound-statement[@dynamicPrecedence=1] {
   ( BeginStmt { kw<'begin'> block? end }
   | QuoteStmt { kw<'quote'> block? end }
   | WhileStmt { kw<'while'> expr block? end }
@@ -144,10 +151,12 @@ GenFor { kw<'for'> sep1<',', ForBinding> }
 GenFilter { kw<'if'> expr }
 Generator { expr ~comp-or-mat GenFor ~gen-or-for (GenFor | GenFilter)* }
 
+MatrixRow { (!mat expr)+ }
+
 array {
   ( ComprehensionExpr { '[' Generator ']' }
-  // | MatrixExpr // TODO
-  | VectorExpr { '[' sep<',', expr> ']' }
+  | MatrixExpr { '[' MatrixRow (_t MatrixRow)* _t? ']' }
+  | VectorExpr { '[' sep<',', (!vec expr)> ']' }
   )
 }
 
@@ -167,7 +176,13 @@ primary-expr {
 // FIXME: Use immediate*
 QuoteExpr { ':' !quote (quotable | ClosedMacrocallExpr | Operator | SyntacticOperator) }
 
-CallExpr { primary-expr !call immediateParen TupleExpr } // FIXME: ArgumentList
+CallExpr {
+  primary-expr !call immediateParen
+  '('
+  Arguments { sep<',', expr> }
+  KeywordArguments { ';' sep<',', expr> }?
+  ')'
+}
 
 ClosedMacrocallExpr {
   MacroIdentifier !call
@@ -293,9 +308,13 @@ interp-expr { '(' expr ')' }
   immediateIdentifier
 }
 @external tokens Identifier from "./tokens.js" { Identifier }
-@external tokens terminator from "./tokens.js" { _t }
+@external tokens terminator from "./tokens.js" { terminatorNewline }
+
+_t { terminatorSemicolon | terminatorNewline }
 
 @tokens {
+  terminatorSemicolon { ';'+ }
+
   // Operators
 
   bdot<tokens> { '.'? tokens } // Broadcasting dot
