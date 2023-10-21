@@ -443,8 +443,7 @@ name(a, b) = a + b
 
 SourceFile(
   FunctionAssignmentExpression(
-    Identifier,
-    ArgumentList(Identifier,Identifier),
+    CallExpression(Identifier, ArgumentList(Identifier,Identifier)),
     BinaryExpression(Identifier,Identifier)
   )
 )
@@ -457,8 +456,7 @@ name(a::T) where {T} = a
 
 SourceFile(
   FunctionAssignmentExpression(
-    Identifier,
-    ArgumentList(TypedExpression(Identifier,Type(Identifier))),
+    CallExpression(Identifier, ArgumentList(TypedExpression(Identifier,Type(Identifier)))),
     where,TypeArgumentList(Identifier),
     Identifier
   )

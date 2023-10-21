@@ -187,18 +187,38 @@ SourceFile(
   )
 )
 
+# Call in call
+
+f(f())
+
+==>
+
+SourceFile(
+    CallExpression(
+        Identifier,
+        ArgumentList(CallExpression(Identifier,ArgumentList()))
+    )
+)
+
 # Try statements
 
 try
     sqrt(x)
 catch
-    sqrt(complex(x, 0))
+    f(g(x,2))
 end
 
 try
-    operate_on_file(f)
+    do_something()
+catch
+else
+    success()
+end
+
+try
+    f(io)
 finally
-    close(f)
+    close(io)
 end
 
 ==>
@@ -215,6 +235,14 @@ SourceFile(
       )
     ),
     end
+  ),
+  TryStatement(try,
+    CallExpression(Identifier,ArgumentList()),
+    CatchClause(catch),
+    TryElseClause(else,
+        CallExpression(Identifier,ArgumentList()),
+    ),
+    end,
   ),
   TryStatement(try,
     CallExpression(Identifier,ArgumentList(Identifier)),

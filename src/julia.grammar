@@ -64,8 +64,8 @@ AssignmentExpression<e> {
   (e | AssignmentExpression<e> | BareTupleExpression<e>))
 }
 
-FunctionAssignmentExpression[@dynamicPrecedence=2] {
-  Identifier ~id immediateParen !call ArgumentList<e, pe> ~id
+FunctionAssignmentExpression {
+  CallExpression<e, pe>
   (kw<"where"> TypeArgumentList<e>)?
   !assign (assignOperator | "=")
   !assign (e | AssignmentExpression<e>)
@@ -108,17 +108,23 @@ ElseClause[closedBy="end"] {
     expressionList<e, pe>
 }
 
-TryStatement[closedBy="end catch finally"] {
+TryStatement[closedBy="end catch else finally"] {
   kw<"try">
     expressionList<e, pe>
   CatchClause?
+  TryElseClause?
   FinallyClause?
   end
 }
 
-CatchClause[closedBy="end finally"] {
+CatchClause[closedBy="end else finally"] {
   kw<"catch"> CatchBinding { Identifier ~id }? !regular1
     expressionList<e, pe>
+}
+
+TryElseClause[closedBy="finally end"] {
+    kw<"else">
+      expressionList<e, pe>
 }
 
 FinallyClause[closedBy="end"] {
