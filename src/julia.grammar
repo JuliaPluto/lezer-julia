@@ -350,6 +350,7 @@ pe {
   MatrixExpression<e> |
   GeneratorExpression<e, pe> |
   TypedExpression<pe> |
+  SubtypedExpression<pe> |
   ParameterizedIdentifier<e, pe> |
   Operator ~op
 }
@@ -447,7 +448,11 @@ TernaryExpression<e> {
 
 TypePart[@name="Type"] { pe }
 TypedExpression<pe> {
-  pe !typeascription (operator<"::"> | operator<"<:">) !typeascription TypePart
+  pe !typeascription operator<"::"> !typeascription TypePart
+}
+
+SubtypedExpression<pe> {
+  pe !typeascription operator<"<:"> !typeascription pe
 }
 
 // I guess there might be more thing "coeffecientable",

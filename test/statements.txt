@@ -366,3 +366,13 @@ SourceFile(
   BlockComment,
   BlockComment,
 )
+
+# Subtypes
+
+Bool <: Integer
+
+==>
+
+SourceFile(
+    SubtypedExpression(Identifier,Identifier),
+)

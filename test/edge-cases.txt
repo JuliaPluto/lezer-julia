@@ -274,9 +274,9 @@ SourceFile(
   ),
   AbstractDefinition(
     abstract,type,
-    Definition(TypedExpression(
+    Definition(SubtypedExpression(
       ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier))
-      Type(Identifier)
+      Identifier,
     )),
     end
   ),
@@ -300,10 +300,10 @@ SourceFile(
   AbstractDefinition(abstract,type,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier,Identifier))),end),
   AbstractDefinition(abstract,type,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier))),end),
   AbstractDefinition(abstract,type,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier,Identifier))),end),
-  AbstractDefinition(abstract,type,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(TypedExpression(Identifier,Type(Identifier))))),end),
-  AbstractDefinition(abstract,type,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(TypedExpression(Identifier,Type(Identifier))))),end),
-  AbstractDefinition(abstract,type,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier,TypedExpression(Identifier,Type(Identifier))))),end),
-  AbstractDefinition(abstract,type,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier,TypedExpression(Identifier,Type(Identifier))))),end))
+  AbstractDefinition(abstract,type,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(SubtypedExpression(Identifier,Identifier)))),end),
+  AbstractDefinition(abstract,type,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(SubtypedExpression(Identifier,Identifier)))),end),
+  AbstractDefinition(abstract,type,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier,SubtypedExpression(Identifier,Identifier)))),end),
+  AbstractDefinition(abstract,type,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier,SubtypedExpression(Identifier,Identifier)))),end))
 
 # PrimitiveDefinition
 
@@ -326,9 +326,9 @@ SourceFile(
   ),
   PrimitiveDefinition(
     primitive,type,
-    Definition(TypedExpression(
+    Definition(SubtypedExpression(
       ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier)),
-      Type(Identifier)
+      Identifier,
     )),
     Number,
     end
@@ -359,7 +359,7 @@ SourceFile(
   StructDefinition(struct,Definition(Identifier),end),
   StructDefinition(struct,Definition(Identifier),end),
   StructDefinition(struct,Definition(ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier))),end),
-  StructDefinition(struct,Definition(TypedExpression(ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier)),Type(Identifier))),end),
+  StructDefinition(struct,Definition(SubtypedExpression(ParameterizedIdentifier(Identifier,TypeArgumentList(Identifier)),Identifier)),end),
   StructDefinition(struct,Definition(Identifier),Identifier,end),
   StructDefinition(struct,Definition(Identifier),Identifier,Identifier,end),
   StructDefinition(mutable,struct,Definition(Identifier),end),
