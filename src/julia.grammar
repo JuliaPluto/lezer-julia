@@ -22,6 +22,7 @@
   ternary @right
   pair @right
   forbinding
+  letbindinglist
   baretuple
   assign @right
   arrow @right
@@ -68,7 +69,7 @@ FunctionAssignmentExpression {
   CallExpression<e, pe>
   (kw<"where"> TypeArgumentList<e>)?
   !assign (assignOperator | "=")
-  !assign e
+  !assign (e | BareTupleExpression<e>)
 }
 
 // STATEMENTS
@@ -157,12 +158,11 @@ ReturnStatement {
 }
 
 VariableDeclaration {
-  ((Identifier | InterpolationExpression) (!right0 "=" e)?) |
-    FunctionAssignmentExpression
+  ((Identifier | InterpolationExpression | (CallExpression<e,pe> (kw<"where"> TypeArgumentList<e>)?)) (!right0 "=" e)?)
 }
 
 LetStatement[closedBy="end"] {
-  kw<"let"> LetBinding { VariableDeclaration ("," VariableDeclaration)* }? terminator
+  kw<"let"> LetBinding { VariableDeclaration !letbindinglist ("," VariableDeclaration)* }? terminator
     expressionList<e, pe>
   end
 }

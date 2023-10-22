@@ -155,14 +155,14 @@ SourceFile(
   ),
   LetStatement(let,
     LetBinding(
-      VariableDeclaration(FunctionAssignmentExpression(
+      VariableDeclaration(
         CallExpression(Identifier,ArgumentList())
         Number,
-      )),
-      VariableDeclaration(FunctionAssignmentExpression(
+      ),
+      VariableDeclaration(
         CallExpression(Identifier,ArgumentList())
         Number,
-      )),
+      ),
     ),
     CallExpression(Identifier,ArgumentList()),
     end,
