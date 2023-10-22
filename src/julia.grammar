@@ -68,7 +68,7 @@ FunctionAssignmentExpression {
   CallExpression<e, pe>
   (kw<"where"> TypeArgumentList<e>)?
   !assign (assignOperator | "=")
-  !assign (e | AssignmentExpression<e>)
+  !assign e
 }
 
 // STATEMENTS
@@ -157,7 +157,8 @@ ReturnStatement {
 }
 
 VariableDeclaration {
-  (Identifier | InterpolationExpression) (!right0 "=" e)?
+  ((Identifier | InterpolationExpression) (!right0 "=" e)?) |
+    FunctionAssignmentExpression
 }
 
 LetStatement[closedBy="end"] {

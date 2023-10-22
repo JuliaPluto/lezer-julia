@@ -137,6 +137,10 @@ let var1 = value1, var2, var3 = value3
     code
 end
 
+let f() = 1, g() = 3
+    f()
+end
+
 ==>
 
 SourceFile(
@@ -148,6 +152,20 @@ SourceFile(
     ),
     Identifier,
     end
+  ),
+  LetStatement(let,
+    LetBinding(
+      VariableDeclaration(FunctionAssignmentExpression(
+        CallExpression(Identifier,ArgumentList())
+        Number,
+      )),
+      VariableDeclaration(FunctionAssignmentExpression(
+        CallExpression(Identifier,ArgumentList())
+        Number,
+      )),
+    ),
+    CallExpression(Identifier,ArgumentList()),
+    end,
   )
 )
 
