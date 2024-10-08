@@ -323,11 +323,13 @@ Program(
 
 export a
 export a, b, +, (*)
+public a
+public a, b, +, (*)
 
 ==>
 Program(
   ExportStatement(export, Identifier),
-  ExportStatement(export, Identifier, Identifier, Operator(UnaryPlusOp), ParenExpression(Operator(TimesOp))),
+  PublicStatement(export, Identifier, Identifier, Operator(UnaryPlusOp), ParenExpression(Operator(TimesOp))),
 )
 
 

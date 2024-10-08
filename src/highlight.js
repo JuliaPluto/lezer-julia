@@ -37,7 +37,7 @@ export const juliaHighlighting = styleTags({
   "const global local": t.definitionKeyword,
 
   "module baremodule ModuleDefinition/end": t.moduleKeyword,
-  "export import using as": t.moduleKeyword, // TODO: Public
+  "export public import using as": t.moduleKeyword,
 
   "in isa where": t.operatorKeyword,
 
