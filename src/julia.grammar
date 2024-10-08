@@ -104,7 +104,8 @@ simple-statement {
   | LocalStatement  { kw<'local'>  !simple top-level }
   | ExportStatement { kw<'export'> !simple sep1<(!tup ','), exportable> }
   | PublicStatement { kw<'public'> !simple sep1<(!tup ','), exportable> }
-  | ImportStatement { (kw<'import'> | kw<'using'>) !simple (import-list | SelectedImport) }
+  | ImportStatement { kw<'import'> !simple (import-list | SelectedImport) }
+  | UsingStatement { kw<'using'> !simple (import-list | SelectedImport) }
   )
 }
 
