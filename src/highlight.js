@@ -69,7 +69,7 @@ export const juliaHighlighting = styleTags({
   "PlusOp Dollar": t.arithmeticOperator,
   "EllipsisOp Colon": t.operator,
   "PipeLeftOp PipeRightOp": t.operator,
-  ComparisonOp: t.compareOperator,
+  "ComparisonOp TypeComparisonOp": t.compareOperator,
   "LazyAndOp LazyOrOp": t.logicOperator,
   ArrowOp: t.operator,
   'TernaryExpression/"?" TernaryExpression/":"': t.controlOperator,
@@ -78,7 +78,7 @@ export const juliaHighlighting = styleTags({
   UpdateOp: t.updateOperator,
 
   "->": t.definitionOperator,
-  ". ... ::": t.operator,
+  ". ... ::": t.punctuation,
 
   "( )": t.paren,
   "[ ]": t.squareBracket,
