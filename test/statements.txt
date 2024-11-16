@@ -55,7 +55,7 @@ Program(
   WhileStatement(while, Condition(BoolLiteral), end),
   WhileStatement(
     while,
-    Condition(BinaryExpression(Identifier, IntegerLiteral)),
+    Condition(BinaryExpression(Identifier, ComparisonOp, IntegerLiteral)),
     CallExpression(Identifier, Arguments(Identifier)),
     ContinueStatement(continue),
     BreakStatement(break),
@@ -89,15 +89,15 @@ Program(
   LetStatement(let, end),
   LetStatement(
     let,
-    LetBinding(Assignment(Identifier, Identifier)),
+    LetBinding(Assignment(Identifier, AssignmentOp, Identifier)),
     LetBinding(Identifier)
-    LetBinding(Assignment(Identifier, Identifier)),
+    LetBinding(Assignment(Identifier, AssignmentOp, Identifier)),
     Identifier,
     end
   ),
   LetStatement(
     let,
-    LetBinding(Assignment(TupleExpression(Identifier, Identifier), Identifier)),
+    LetBinding(Assignment(TupleExpression(Identifier, Identifier), AssignmentOp, Identifier)),
     Identifier,
     end,
   )
@@ -138,24 +138,24 @@ end
 Program(
   ForStatement(
     for,
-    ForBinding(Identifier, in, Identifier),
+    ForBinding(Identifier, AssignmentOp(in), Identifier),
     end
   ),
   ForStatement(
     for,
-    ForBinding(Identifier, in, Identifier),
+    ForBinding(Identifier, AssignmentOp(in), Identifier),
     CallExpression(Identifier, Arguments(Identifier)),
     end
   ),
   ForStatement(
     for,
-    ForBinding(Identifier, in, VectorExpression(IntegerLiteral, IntegerLiteral, IntegerLiteral)),
+    ForBinding(Identifier, AssignmentOp(in), VectorExpression(IntegerLiteral, IntegerLiteral, IntegerLiteral)),
     CallExpression(Identifier,Arguments(Identifier)),
     end
   ),
   ForStatement(
     for,
-    ForBinding(TupleExpression(Identifier, Identifier), in, Identifier),
+    ForBinding(TupleExpression(Identifier, Identifier), AssignmentOp(in), Identifier),
     CallExpression(Identifier, Arguments(Identifier, Identifier)),
     end
   )
@@ -175,12 +175,13 @@ end
 
 ==>
 Program(
-  Assignment(Identifier, IntegerLiteral),
+  Assignment(Identifier, AssignmentOp, IntegerLiteral),
   ForStatement(
     for,
     ForBinding(
       outer,
       Identifier,
+      AssignmentOp,
       Identifier,
     )
     Identifier,
@@ -191,11 +192,13 @@ Program(
     ForBinding(
       outer,
       Identifier,
+      AssignmentOp,
       Identifier,
     )
     ForBinding(
       outer,
       Identifier,
+      AssignmentOp,
       Identifier,
     )
     Identifier,
@@ -281,7 +284,7 @@ end
 Program(
   TryStatement(
     try
-    Assignment(Identifier CallExpression(Identifier Arguments(Identifier))),
+    Assignment(Identifier AssignmentOp CallExpression(Identifier Arguments(Identifier))),
     CatchClause(
       catch
       Identifier
@@ -311,7 +314,7 @@ return a, b, c
 Program(
   ReturnStatement(return),
   ReturnStatement(return, Identifier),
-  ReturnStatement(return, BinaryExpression(Identifier, Identifier)),
+  ReturnStatement(return, BinaryExpression(Identifier, LazyOrOp, Identifier)),
   ReturnStatement(return, OpenTuple(Identifier, Identifier, Identifier))
 )
 
@@ -324,7 +327,7 @@ export a, b, +, (*)
 ==>
 Program(
   ExportStatement(export, Identifier),
-  ExportStatement(export, Identifier, Identifier, Operator, ParenExpression(Operator)),
+  ExportStatement(export, Identifier, Identifier, Operator(UnaryPlusOp), ParenExpression(Operator(TimesOp))),
 )
 
 
@@ -361,7 +364,7 @@ Program(
   ImportStatement(import, ImportPath(Identifier, Identifier)),
   ImportStatement(using, SelectedImport(ImportPath(Identifier), ImportPath(Identifier), ImportPath(Identifier))),
   ImportStatement(import, SelectedImport(ImportPath(Identifier), MacroIdentifier(Identifier))),
-  ImportStatement(import, SelectedImport(ImportPath(Identifier), Operator, Operator))
+  ImportStatement(import, SelectedImport(ImportPath(Identifier), Operator(ComparisonOp), Operator(UnaryPlusOp)))
 )
 
 
@@ -390,7 +393,7 @@ Program(
   ImportStatement(using, SelectedImport(ImportPath(Identifier), ImportAlias(ImportPath(Identifier), as, Identifier))),
   LineComment,
   ImportStatement(import, SelectedImport(ImportPath(Identifier), ImportAlias(ImportPath(Identifier, Identifier), as, Identifier))),
-  ImportStatement(import, SelectedImport(ImportPath(Identifier), ImportAlias(Operator, as, Operator))),
+  ImportStatement(import, SelectedImport(ImportPath(Identifier), ImportAlias(Operator(UnaryPlusOp), as, Operator(UnaryPlusOp)))),
   ImportStatement(using, SelectedImport(ImportPath(Identifier), ImportAlias(MacroIdentifier(Identifier), as, MacroIdentifier(Identifier))))
 )
 
@@ -405,12 +408,12 @@ const y, z = 3, 4
 
 ==>
 Program(
-  ConstStatement(const, Assignment(Identifier, IntegerLiteral)),
-  ConstStatement(const, Assignment(Identifier, OpenTuple(IntegerLiteral, IntegerLiteral))),
-  ConstStatement(const, Assignment(OpenTuple(Identifier, Identifier), OpenTuple(IntegerLiteral, IntegerLiteral))),
+  ConstStatement(const, Assignment(Identifier, AssignmentOp, IntegerLiteral)),
+  ConstStatement(const, Assignment(Identifier, AssignmentOp, OpenTuple(IntegerLiteral, IntegerLiteral))),
+  ConstStatement(const, Assignment(OpenTuple(Identifier, Identifier), AssignmentOp, OpenTuple(IntegerLiteral, IntegerLiteral))),
   ParenExpression(
     IntegerLiteral,
-    ConstStatement(const, Assignment(OpenTuple(Identifier, Identifier), OpenTuple(IntegerLiteral, IntegerLiteral))),
+    ConstStatement(const, Assignment(OpenTuple(Identifier, Identifier), AssignmentOp, OpenTuple(IntegerLiteral, IntegerLiteral))),
   )
 )
 
@@ -425,9 +428,9 @@ local function bar() 4 end
 ==>
 Program(
   LocalStatement(local, Identifier),
-  LocalStatement(local, Assignment(OpenTuple(Identifier, Identifier), OpenTuple(IntegerLiteral, IntegerLiteral))),
+  LocalStatement(local, Assignment(OpenTuple(Identifier, Identifier), AssignmentOp, OpenTuple(IntegerLiteral, IntegerLiteral))),
 
-  LocalStatement(local, Assignment(CallExpression(Identifier, Arguments), IntegerLiteral)),
+  LocalStatement(local, Assignment(CallExpression(Identifier, Arguments), AssignmentOp, IntegerLiteral)),
   LocalStatement(local, FunctionDefinition(function, Signature(CallExpression(Identifier, Arguments)), IntegerLiteral, end)),
 )
 
@@ -442,8 +445,8 @@ global function bar() 4 end
 ==>
 Program(
   GlobalStatement(global, Identifier),
-  GlobalStatement(global, Assignment(OpenTuple(Identifier, Identifier), OpenTuple(IntegerLiteral, IntegerLiteral))),
+  GlobalStatement(global, Assignment(OpenTuple(Identifier, Identifier), AssignmentOp, OpenTuple(IntegerLiteral, IntegerLiteral))),
 
-  GlobalStatement(global, Assignment(CallExpression(Identifier, Arguments), IntegerLiteral)),
+  GlobalStatement(global, Assignment(CallExpression(Identifier, Arguments), AssignmentOp, IntegerLiteral)),
   GlobalStatement(global, FunctionDefinition(function, Signature(CallExpression(Identifier, Arguments)), IntegerLiteral, end)),
 )

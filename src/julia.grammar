@@ -42,7 +42,7 @@ OpenTuple { expr (!tup ',' expr)+ }
 // Assignments inside blocks, including top-level.
 OpenAssignment[@name=Assignment] {
   (primary-expr | operation<expr> | Operator | OpenTuple)
-  !assignment (assignment-operator | compound-assignment-operator | tilde-operator) !assignment
+  !assignment (AssignmentOp | UpdateOp | TildeOp) !assignment
   top-level
 }
 
@@ -50,7 +50,7 @@ OpenAssignment[@name=Assignment] {
 _binding<alias, expr> {
   [@name={alias}] {
       (primary-expr | operation<expr> | Operator)
-      !assignment (assignment-operator | compound-assignment-operator | tilde-operator) !assignment
+      !assignment (AssignmentOp | UpdateOp | TildeOp) !assignment
       (expr | _binding<'Assignment', expr>)
   }
 }
@@ -65,7 +65,7 @@ expression<expr> {
   | ArrowFunctionExpression
   | JuxtapositionExpression
   | TernaryExpression<expr>
-  | Operator ~op-as-id
+  | Operator
   | FloatLiteral
   | IntegerLiteral
   )
@@ -194,7 +194,7 @@ TupleExpression { tuple }
 
 
 // NOTE: binding `in` is a keyword, membership `in` is a function
-ForBinding { kwid<'outer'>? (Identifier | TupleExpression) !assignment ('=' | '∈' | kwid<'in'>) expr }
+ForBinding { kwid<'outer'>? (Identifier | TupleExpression) !assignment AssignmentOp { '=' | '∈' | kwid<'in'> } expr }
 GenFor { kw<'for'> sep1<(!tup ','), ForBinding> }
 GenFilter { kw<'if'> expr }
 Generator<expr> { expr !simple GenFor (GenFor | GenFilter)* }
@@ -268,11 +268,10 @@ Symbol {
 }
 
 // OPERATIONS
-// TODO: Make operators visible.
 
 operation<expr> {
   ( SplatExpression { expr !colon '...' }
-  | UnaryExpression { (tilde-operator | type-comparison-operator | unary-operator | unary-plus-operator) !unary expr }
+  | UnaryExpression { (TildeOp | TypeComparisonOp | UnaryOp | UnaryPlusOp) !unary expr }
   | [@name=UnaryExpression] { '::' !unary Type { expr } }
   | BinaryExpression<expr>
   )
@@ -281,19 +280,19 @@ operation<expr> {
 BinaryExpression<expr> {
   ( expr !where      kwid<'where'> !where Type { expr }
   | expr !decl       '::' Type { expr }
-  | expr !power      power-operator !power expr
-  | expr !bitshift   bitshift-operator !bitshift expr
-  | expr !rational   rational-operator !rational expr
-  | expr !times      times-operator !times expr
-  | expr !plus       (plus-operator | unary-plus-operator | '$') !plus expr
-  | expr !colon      (ellipsis-operator | ':') !colon expr
-  | expr !pipe-right pipe-right-operator !pipe-right expr
-  | expr !pipe-left  pipe-left-operator !pipe-left expr
-  | expr !comparison (comparison-operator | type-comparison-operator | membership-operator) !comparison expr
-  | expr !lazy-and   lazy-and-operator expr
-  | expr !lazy-or    lazy-or-operator expr
-  | expr !arrow      arrow-operator !arrow expr
-  | expr !pair       pair-operator !pair expr
+  | expr !power      PowerOp !power expr
+  | expr !bitshift   BitshiftOp !bitshift expr
+  | expr !rational   RationalOp !rational expr
+  | expr !times      TimesOp !times expr
+  | expr !plus       (PlusOp | UnaryPlusOp | Dollar { '$' }) !plus expr
+  | expr !colon      (EllipsisOp | Colon { ':' }) !colon expr
+  | expr !pipe-right PipeRightOp !pipe-right expr
+  | expr !pipe-left  PipeLeftOp !pipe-left expr
+  | expr !comparison (ComparisonOp | TypeComparisonOp | membership-operator) !comparison expr
+  | expr !lazy-and   LazyAndOp expr
+  | expr !lazy-or    LazyOrOp expr
+  | expr !arrow      ArrowOp !arrow expr
+  | expr !pair       PairOp !pair expr
   )
 }
 
@@ -312,23 +311,23 @@ TernaryExpression<expr> { expr !ternary '?' !ternary expr !ternary ':' !ternary 
 
 
 Operator {
-  ( tilde-operator
-  | type-comparison-operator
-  | unary-operator
-  | unary-plus-operator
-  | power-operator
-  | bitshift-operator
-  | rational-operator
-  | times-operator
-  | plus-operator
-  | ellipsis-operator
-  | '$'
-  | ':'
-  | pipe-right-operator
-  | pipe-left-operator
-  | comparison-operator
-  | arrow-operator
-  | pair-operator
+  ( TildeOp
+  | TypeComparisonOp
+  | UnaryOp
+  | UnaryPlusOp
+  | PowerOp
+  | BitshiftOp
+  | RationalOp
+  | TimesOp
+  | PlusOp
+  | EllipsisOp
+  | Dollar { '$' }
+  | Colon { ':' }
+  | PipeRightOp
+  | PipeLeftOp
+  | ComparisonOp
+  | ArrowOp
+  | PairOp
   )
 }
 
@@ -340,12 +339,12 @@ SyntacticOperator[@name=Operator] {
   ( '.'
   | '::'
   | '...'
-  | lazy-and-operator
-  | lazy-or-operator
+  | LazyAndOp
+  | LazyOrOp
   | '?'
   | '->'
-  | assignment-operator
-  | compound-assignment-operator
+  | AssignmentOp
+  | UpdateOp
   )
 }
 
@@ -412,31 +411,39 @@ _t { newline | semicolon }
   op<tokens> { bdot<tokens> suffix? }
 
   // Unary prefix operators
-  tilde-operator { op<'~'> } // unary / assignment
-  type-comparison-operator { op<'<:' | '>:'> } // unary / comparison
-  unary-operator { op<'!' | $[¬√∛∜]> }
-  unary-plus-operator { op<$[-+] | $[±∓]> }
+  TildeOp { op<'~'> } // unary / assignment
+  TypeComparisonOp { op<'<:' | '>:'> } // unary / comparison
+  UnaryOp { op<'!' | $[¬√∛∜]> }
+  UnaryPlusOp { op<$[-+] | $[±∓]> }
 
   // Binary operators
-  power-operator { op<'^' | $[↑↓⇵⟰⟱⤈⤉⤊⤋⤒⤓⥉⥌⥍⥏⥑⥔⥕⥘⥙⥜⥝⥠⥡⥣⥥⥮⥯￪￬]> }
-  bitshift-operator { op<'<<' | '>>' | '>>>'> }
-  rational-operator { op<'//'> }
-  times-operator { op<$[*/%&\\] | $[⌿÷··⋅∘×∩∧⊗⊘⊙⊚⊛⊠⊡⊓∗∙∤⅋≀⊼⋄⋆⋇⋉⋊⋋⋌⋏⋒⟑⦸⦼⦾⦿⧶⧷⨇⨰⨱⨲⨳⨴⨵⨶⨷⨸⨻⨼⨽⩀⩃⩄⩋⩍⩎⩑⩓⩕⩘⩚⩜⩞⩟⩠⫛⊍▷⨝⟕⟖⟗⨟]> }
-  plus-operator { op<'++' | '|' | $[−¦⊕⊖⊞⊟∪∨⊔∔∸≏⊎⊻⊽⋎⋓⟇⧺⧻⨈⨢⨣⨤⨥⨦⨧⨨⨩⨪⨫⨬⨭⨮⨹⨺⩁⩂⩅⩊⩌⩏⩐⩒⩔⩖⩗⩛⩝⩡⩢⩣]> }
-  ellipsis-operator { op<$[…⁝⋮⋱⋰⋯]> } // TODO: `..` conflicts with ImportPath
-  pipe-right-operator { op<'|>'> }
-  pipe-left-operator { op<'<|'> }
-  comparison-operator { op<'>=' | '<=' | '==' | '===' | '!=' | '!==' | $[><] | $[≥≤≡≠≢∈∉∋∌⊆⊈⊂⊄⊊∝∊∍∥∦∷∺∻∽∾≁≃≂≄≅≆≇≈≉≊≋≌≍≎≐≑≒≓≖≗≘≙≚≛≜≝≞≟≣≦≧≨≩≪≫≬≭≮≯≰≱≲≳≴≵≶≷≸≹≺≻≼≽≾≿⊀⊁⊃⊅⊇⊉⊋⊏⊐⊑⊒⊜⊩⊬⊮⊰⊱⊲⊳⊴⊵⊶⊷⋍⋐⋑⋕⋖⋗⋘⋙⋚⋛⋜⋝⋞⋟⋠⋡⋢⋣⋤⋥⋦⋧⋨⋩⋪⋫⋬⋭⋲⋳⋴⋵⋶⋷⋸⋹⋺⋻⋼⋽⋾⋿⟈⟉⟒⦷⧀⧁⧡⧣⧤⧥⩦⩧⩪⩫⩬⩭⩮⩯⩰⩱⩲⩳⩵⩶⩷⩸⩹⩺⩻⩼⩽⩾⩿⪀⪁⪂⪃⪄⪅⪆⪇⪈⪉⪊⪋⪌⪍⪎⪏⪐⪑⪒⪓⪔⪕⪖⪗⪘⪙⪚⪛⪜⪝⪞⪟⪠⪡⪢⪣⪤⪥⪦⪧⪨⪩⪪⪫⪬⪭⪮⪯⪰⪱⪲⪳⪴⪵⪶⪷⪸⪹⪺⪻⪼⪽⪾⪿⫀⫁⫂⫃⫄⫅⫆⫇⫈⫉⫊⫋⫌⫍⫎⫏⫐⫑⫒⫓⫔⫕⫖⫗⫘⫙⫷⫸⫹⫺⊢⊣⟂⫪⫫]> }
-  arrow-operator { op<'-->' | '<--' | '<-->' | $[←→↔↚↛↞↠↢↣↦↤↮⇎⇍⇏⇐⇒⇔⇴⇶⇷⇸⇹⇺⇻⇼⇽⇾⇿⟵⟶⟷⟹⟺⟻⟼⟽⟾⟿⤀⤁⤂⤃⤄⤅⤆⤇⤌⤍⤎⤏⤐⤑⤔⤕⤖⤗⤘⤝⤞⤟⤠⥄⥅⥆⥇⥈⥊⥋⥎⥐⥒⥓⥖⥗⥚⥛⥞⥟⥢⥤⥦⥧⥨⥩⥪⥫⥬⥭⥰⧴⬱⬰⬲⬳⬴⬵⬶⬷⬸⬹⬺⬻⬼⬽⬾⬿⭀⭁⭂⭃⥷⭄⥺⭇⭈⭉⭊⭋⭌￩￫⇜⇝↜↝↩↪↫↬↼↽⇀⇁⇄⇆⇇⇉⇋⇌⇚⇛⇠⇢↷↶↺↻]> }
-  pair-operator { op<'=>'> }
+  PowerOp { op<'^' | $[↑↓⇵⟰⟱⤈⤉⤊⤋⤒⤓⥉⥌⥍⥏⥑⥔⥕⥘⥙⥜⥝⥠⥡⥣⥥⥮⥯￪￬]> }
+  BitshiftOp { op<'<<' | '>>' | '>>>'> }
+  RationalOp { op<'//'> }
+  TimesOp { op<$[*/%&\\] | $[⌿÷··⋅∘×∩∧⊗⊘⊙⊚⊛⊠⊡⊓∗∙∤⅋≀⊼⋄⋆⋇⋉⋊⋋⋌⋏⋒⟑⦸⦼⦾⦿⧶⧷⨇⨰⨱⨲⨳⨴⨵⨶⨷⨸⨻⨼⨽⩀⩃⩄⩋⩍⩎⩑⩓⩕⩘⩚⩜⩞⩟⩠⫛⊍▷⨝⟕⟖⟗⨟]> }
+  PlusOp { op<'++' | '|' | $[−¦⊕⊖⊞⊟∪∨⊔∔∸≏⊎⊻⊽⋎⋓⟇⧺⧻⨈⨢⨣⨤⨥⨦⨧⨨⨩⨪⨫⨬⨭⨮⨹⨺⩁⩂⩅⩊⩌⩏⩐⩒⩔⩖⩗⩛⩝⩡⩢⩣]> }
+  EllipsisOp { op<$[…⁝⋮⋱⋰⋯]> } // TODO: `..` conflicts with ImportPath
+  PipeRightOp { op<'|>'> }
+  PipeLeftOp { op<'<|'> }
+  ComparisonOp { op<'>=' | '<=' | '==' | '===' | '!=' | '!==' | $[><] | $[≥≤≡≠≢∈∉∋∌⊆⊈⊂⊄⊊∝∊∍∥∦∷∺∻∽∾≁≃≂≄≅≆≇≈≉≊≋≌≍≎≐≑≒≓≖≗≘≙≚≛≜≝≞≟≣≦≧≨≩≪≫≬≭≮≯≰≱≲≳≴≵≶≷≸≹≺≻≼≽≾≿⊀⊁⊃⊅⊇⊉⊋⊏⊐⊑⊒⊜⊩⊬⊮⊰⊱⊲⊳⊴⊵⊶⊷⋍⋐⋑⋕⋖⋗⋘⋙⋚⋛⋜⋝⋞⋟⋠⋡⋢⋣⋤⋥⋦⋧⋨⋩⋪⋫⋬⋭⋲⋳⋴⋵⋶⋷⋸⋹⋺⋻⋼⋽⋾⋿⟈⟉⟒⦷⧀⧁⧡⧣⧤⧥⩦⩧⩪⩫⩬⩭⩮⩯⩰⩱⩲⩳⩵⩶⩷⩸⩹⩺⩻⩼⩽⩾⩿⪀⪁⪂⪃⪄⪅⪆⪇⪈⪉⪊⪋⪌⪍⪎⪏⪐⪑⪒⪓⪔⪕⪖⪗⪘⪙⪚⪛⪜⪝⪞⪟⪠⪡⪢⪣⪤⪥⪦⪧⪨⪩⪪⪫⪬⪭⪮⪯⪰⪱⪲⪳⪴⪵⪶⪷⪸⪹⪺⪻⪼⪽⪾⪿⫀⫁⫂⫃⫄⫅⫆⫇⫈⫉⫊⫋⫌⫍⫎⫏⫐⫑⫒⫓⫔⫕⫖⫗⫘⫙⫷⫸⫹⫺⊢⊣⟂⫪⫫]> }
+  ArrowOp { op<'-->' | '<--' | '<-->' | $[←→↔↚↛↞↠↢↣↦↤↮⇎⇍⇏⇐⇒⇔⇴⇶⇷⇸⇹⇺⇻⇼⇽⇾⇿⟵⟶⟷⟹⟺⟻⟼⟽⟾⟿⤀⤁⤂⤃⤄⤅⤆⤇⤌⤍⤎⤏⤐⤑⤔⤕⤖⤗⤘⤝⤞⤟⤠⥄⥅⥆⥇⥈⥊⥋⥎⥐⥒⥓⥖⥗⥚⥛⥞⥟⥢⥤⥦⥧⥨⥩⥪⥫⥬⥭⥰⧴⬱⬰⬲⬳⬴⬵⬶⬷⬸⬹⬺⬻⬼⬽⬾⬿⭀⭁⭂⭃⥷⭄⥺⭇⭈⭉⭊⭋⭌￩￫⇜⇝↜↝↩↪↫↬↼↽⇀⇁⇄⇆⇇⇉⇋⇌⇚⇛⇠⇢↷↶↺↻]> }
+  PairOp { op<'=>'> }
 
   // Binary syntactic operators (broadcast dot, but no suffixes)
-  lazy-and-operator { bdot<'&&'> }
-  lazy-or-operator { bdot<'||'> }
-  assignment-operator { bdot<'='> }
-  compound-assignment-operator { ':=' | '$=' | bdot<(bitshift-operator | '//' | $[-+*/\\^÷%|&⊻]) '=' | $[≔⩴≕]> }
+  LazyAndOp { bdot<'&&'> }
+  LazyOrOp { bdot<'||'> }
+  AssignmentOp { bdot<'='> }
+  UpdateOp { ':=' | '$=' | bdot<(BitshiftOp | '//' | $[-+*/\\^÷%|&⊻]) '=' | $[≔⩴≕]> }
 
-  @precedence { compound-assignment-operator, unary-plus-operator }
+  // Other syntactic operators
+  '.'
+  '::'
+  '...'
+  '?'
+  ':'
+  '->'
+
+  @precedence { UpdateOp, UnaryPlusOp }
 
 
   // NUMBERS
@@ -503,7 +510,7 @@ _t { newline | semicolon }
   _ws { @whitespace+ }
   semicolon { ';'+ }
 
-  // For detectDelim to work
+  // BRACKETS (for detectDelim to work)
   '(' ')' '[' ']' '{' '}'
 }
 

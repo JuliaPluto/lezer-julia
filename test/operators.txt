@@ -9,12 +9,12 @@
 
 ==>
 Program(
-  UnaryExpression(Identifier),
-  UnaryExpression(Identifier),
-  UnaryExpression(IntegerLiteral),
-  UnaryExpression(AdjointExpression(Identifier), LineComment),
-  BinaryExpression(UnaryExpression(Identifier), UnaryExpression(ParenExpression(Identifier))), LineComment,
-  BinaryExpression(IntegerLiteral, UnaryExpression(IntegerLiteral)),
+  UnaryExpression(UnaryPlusOp, Identifier),
+  UnaryExpression(UnaryPlusOp, Identifier),
+  UnaryExpression(UnaryOp, IntegerLiteral),
+  UnaryExpression(UnaryPlusOp, AdjointExpression(Identifier), LineComment),
+  BinaryExpression(UnaryExpression(UnaryOp, Identifier), ComparisonOp, UnaryExpression(UnaryOp, ParenExpression(Identifier))), LineComment,
+  BinaryExpression(IntegerLiteral, PlusOp, UnaryExpression(UnaryPlusOp, IntegerLiteral)),
 )
 
 
@@ -29,12 +29,12 @@ A \ (v × w)
 
 ==>
 Program(
-  BinaryExpression(Identifier, IntegerLiteral),
-  UnaryExpression(BinaryExpression(Identifier, IntegerLiteral, LineComment)),
-  BinaryExpression(Identifier, Identifier),
-  BinaryExpression(Identifier, Identifier),
-  BinaryExpression(Identifier, BinaryExpression(IntegerLiteral, BinaryExpression(Identifier, IntegerLiteral))), LineComment,
-  BinaryExpression(Identifier, ParenExpression(BinaryExpression(Identifier, Identifier))),
+  BinaryExpression(Identifier, PowerOp, IntegerLiteral),
+  UnaryExpression(UnaryPlusOp, BinaryExpression(Identifier, PowerOp, IntegerLiteral, LineComment)),
+  BinaryExpression(Identifier, RationalOp, Identifier),
+  BinaryExpression(Identifier, UnaryPlusOp, Identifier),
+  BinaryExpression(Identifier, PlusOp, BinaryExpression(IntegerLiteral, TimesOp, BinaryExpression(Identifier, PowerOp, IntegerLiteral))), LineComment,
+  BinaryExpression(Identifier, TimesOp, ParenExpression(BinaryExpression(Identifier, TimesOp, Identifier))),
 )
 
 
@@ -47,6 +47,7 @@ Program(
 Program(
   BinaryExpression(
     IntegerLiteral,
+    UnaryPlusOp,
     IntegerLiteral,
   )
 )
@@ -60,10 +61,11 @@ a .* b .+ c
 ==>
 Program(
   BinaryExpression(
-    BinaryExpression(Identifier, Identifier),
+    BinaryExpression(Identifier, TimesOp, Identifier),
+    UnaryPlusOp,
     Identifier
   )
-  UnaryExpression(VectorExpression(Identifier)),
+  UnaryExpression(TildeOp, VectorExpression(Identifier)),
 )
 
 
@@ -74,9 +76,10 @@ a^p ≡ₚ a
 
 ==>
 Program(
-  BinaryExpression(Identifier, Identifier),
+  BinaryExpression(Identifier, UnaryPlusOp, Identifier),
   BinaryExpression(
-    BinaryExpression(Identifier, Identifier),
+    BinaryExpression(Identifier, PowerOp, Identifier),
+    ComparisonOp,
     Identifier
   )
 )
@@ -89,13 +92,14 @@ a & b | c
 
 ==>
 Program(
-  BinaryExpression(BinaryExpression(Identifier, Identifier), Identifier),
+  BinaryExpression(BinaryExpression(Identifier, TimesOp, Identifier), PlusOp, Identifier),
   BinaryExpression(
     TupleExpression(
-      BinaryExpression(Identifier, IntegerLiteral),
-      BinaryExpression(Identifier, IntegerLiteral),
+      BinaryExpression(Identifier, BitshiftOp, IntegerLiteral),
+      BinaryExpression(Identifier, BitshiftOp, IntegerLiteral),
       Identifier,
     ),
+    TimesOp,
     IntegerLiteral
   )
 )
@@ -116,22 +120,26 @@ Program(
   CallExpression(
     Identifier,
     Arguments(
-      BinaryExpression(Identifier, Identifier),
-      BinaryExpression(Identifier, Identifier),
+      BinaryExpression(Identifier, PairOp, Identifier),
+      BinaryExpression(Identifier, PairOp, Identifier),
     ),
   ),
   BinaryExpression(
     BinaryExpression(
       Identifier,
+      PipeRightOp,
       Identifier,
     ),
+    PipeRightOp,
     Identifier,
   ),
   BinaryExpression(
     Identifier,
+    ArrowOp,
     BinaryExpression(
       Identifier,
-      BinaryExpression(Identifier, Identifier),
+      ArrowOp,
+      BinaryExpression(Identifier, ArrowOp, Identifier),
     )
   )
 )
@@ -145,8 +153,8 @@ x:y+1
 
 ==>
 Program(
-  BinaryExpression(IntegerLiteral, IntegerLiteral),
-  BinaryExpression(Identifier, BinaryExpression(Identifier, IntegerLiteral)),
+  BinaryExpression(IntegerLiteral, Colon, IntegerLiteral),
+  BinaryExpression(Identifier, Colon, BinaryExpression(Identifier, UnaryPlusOp, IntegerLiteral)),
   LineComment,
 )
 
@@ -160,10 +168,10 @@ Program(
 
 ==>
 Program(
+  QuoteExpression(ParenExpression(Operator(Colon))),
   QuoteExpression(ParenExpression(Operator)),
-  QuoteExpression(ParenExpression(Operator)),
-  QuoteExpression(ParenExpression(UnaryExpression(Type(Operator)))),
-  QuoteExpression(ParenExpression(UnaryExpression(Type(UnaryExpression(Type(Operator)))))),
+  QuoteExpression(ParenExpression(UnaryExpression(Type(Operator(Colon))))),
+  QuoteExpression(ParenExpression(UnaryExpression(Type(UnaryExpression(Type(Operator(Colon))))))),
 )
 
 
@@ -181,29 +189,45 @@ x ≥ 0 ≥ z
 
 ==>
 Program(
-  BinaryExpression(Identifier, IntegerLiteral),
-  BinaryExpression(Identifier, IntegerLiteral),
+  BinaryExpression(Identifier, ComparisonOp, IntegerLiteral),
+  BinaryExpression(Identifier, ComparisonOp, IntegerLiteral),
   LineComment,
-  BinaryExpression(Identifier, IntegerLiteral),
+  BinaryExpression(Identifier, ComparisonOp, IntegerLiteral),
   LineComment,
   BinaryExpression(
-    BinaryExpression(Identifier, Identifier),
+    BinaryExpression(Identifier, ComparisonOp, Identifier),
+    ComparisonOp,
     Identifier
   ),
   BinaryExpression(
-    BinaryExpression(Identifier, IntegerLiteral),
+    BinaryExpression(Identifier, ComparisonOp, IntegerLiteral),
+    ComparisonOp,
     Identifier
   )
 )
 
 
-# binary comparison operators - Types
+# Binary comparison operators - Types
 
 Bool <: Integer
 
 ==>
 Program(
-    BinaryExpression(Identifier, Identifier),
+    BinaryExpression(Identifier, TypeComparisonOp, Identifier),
+)
+
+
+# Binary logic operators
+
+p && q
+p && q || r
+p .|| q .&& r
+
+==>
+Program(
+    BinaryExpression(Identifier, LazyAndOp, Identifier),
+    BinaryExpression(BinaryExpression(Identifier, LazyAndOp, Identifier), LazyOrOp, Identifier),
+    BinaryExpression(Identifier, LazyOrOp, BinaryExpression(Identifier, LazyAndOp, Identifier)),
 )
 
 
@@ -218,11 +242,11 @@ foo(^, ÷, -)
 
 ==>
 Program(
-  Operator,
-  Operator,
-  Assignment(Identifier, Operator),
-  Assignment(Operator, Operator),
-  CallExpression(Identifier, Arguments(Operator, Operator, Operator)),
+  Operator(UnaryOp),
+  Operator(UnaryOp),
+  Assignment(Identifier, AssignmentOp, Operator(UnaryPlusOp)),
+  Assignment(Operator(ComparisonOp), AssignmentOp, Operator(ComparisonOp)),
+  CallExpression(Identifier, Arguments(Operator(PowerOp), Operator(TimesOp), Operator(UnaryPlusOp))),
 )
 
 
@@ -234,7 +258,7 @@ Program(
 
 ==>
 Program(
-  CallExpression(Operator, Arguments(IntegerLiteral, IntegerLiteral)),
-  CallExpression(Operator, Arguments(Identifier, Identifier)),
-  MacrocallExpression(MacroIdentifier(Operator)),
+  UnaryExpression(UnaryPlusOp, TupleExpression(IntegerLiteral, IntegerLiteral)),
+  CallExpression(Operator(TimesOp), Arguments(Identifier, Identifier)),
+  MacrocallExpression(MacroIdentifier(Operator(TypeComparisonOp))),
 )

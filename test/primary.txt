@@ -40,7 +40,7 @@ where where where
 
 ==>
 Program(
-  Assignment(Identifier, Identifier),
+  Assignment(Identifier, AssignmentOp, Identifier),
   BinaryExpression(Identifier, where, Type(Identifier)),
 )
 
@@ -70,8 +70,8 @@ Program(
     )
     Field(Identifier),
   ),
-  FieldExpression(Identifier, Field(Symbol(Operator))),
-  FieldExpression(Identifier, Field(QuoteExpression(ParenExpression(Operator)))),
+  FieldExpression(Identifier, Field(Symbol(Operator(UnaryPlusOp)))),
+  FieldExpression(Identifier, Field(QuoteExpression(ParenExpression(Operator(ComparisonOp))))),
   FieldExpression(Identifier, Field(StringLiteral)),
   FieldExpression(Identifier, Field(NsStringLiteral(Identifier))),
 
@@ -117,9 +117,9 @@ xs[i += 1]
 ==>
 Program(
   IndexExpression(Identifier, VectorExpression()),
-  IndexExpression(Identifier, VectorExpression(IntegerLiteral, Operator)),
+  IndexExpression(Identifier, VectorExpression(IntegerLiteral, Operator(Colon))),
   IndexExpression(StringLiteral, VectorExpression(IntegerLiteral)),
-  IndexExpression(Identifier, VectorExpression(Assignment(Identifier, IntegerLiteral))),
+  IndexExpression(Identifier, VectorExpression(Assignment(Identifier, UpdateOp, IntegerLiteral))),
 ),
 
 
@@ -133,9 +133,9 @@ xs[end - 1]
 ==>
 Program(
   IndexExpression(Identifier, VectorExpression(begin)),
-  IndexExpression(Identifier, VectorExpression(BinaryExpression(begin, IntegerLiteral))),
+  IndexExpression(Identifier, VectorExpression(BinaryExpression(begin, UnaryPlusOp, IntegerLiteral))),
   IndexExpression(Identifier, VectorExpression(end)),
-  IndexExpression(Identifier, VectorExpression(BinaryExpression(end, IntegerLiteral))),
+  IndexExpression(Identifier, VectorExpression(BinaryExpression(end, UnaryPlusOp, IntegerLiteral))),
 )
 
 
@@ -153,7 +153,7 @@ $(usertype){T}
 Program(
   ParametrizedExpression(Identifier, BraceExpression(Identifier)),
   ParametrizedExpression(Identifier, BraceExpression(Identifier, Identifier)),
-  ParametrizedExpression(Identifier, BraceExpression(UnaryExpression(Identifier))),
+  ParametrizedExpression(Identifier, BraceExpression(UnaryExpression(TypeComparisonOp, Identifier))),
   ParametrizedExpression(
     InterpExpression(ParenExpression(Identifier)),
     BraceExpression(Identifier)
@@ -161,6 +161,7 @@ Program(
   LineComment,
   Assignment(
     BraceExpression(Symbol(Identifier)),
+    TildeOp,
     CallExpression(Identifier, Arguments(IntegerLiteral, IntegerLiteral))
   )
 )
@@ -205,8 +206,8 @@ foo!.(ys)
 Program(
   CallExpression(Identifier, Arguments(Identifier)),
   CallExpression(Identifier, Arguments(Identifier)),
-  CallExpression(Operator, Arguments(Identifier)),
-  UnaryExpression(CallExpression(Identifier, Arguments(Identifier))),
+  CallExpression(Operator(TimesOp), Arguments(Identifier)),
+  UnaryExpression(UnaryOp, CallExpression(Identifier, Arguments(Identifier))),
 )
 
 
@@ -222,7 +223,7 @@ Program(
     Identifier,
     Arguments(
       Identifier,
-      KeywordArguments(KwArg(Identifier, Identifier))
+      KeywordArguments(KwArg(Identifier, AssignmentOp, Identifier))
     ),
   ),
   CallExpression(
@@ -323,9 +324,9 @@ Program(
   QuoteExpression(TupleExpression(Identifier, Identifier)),
   QuoteExpression(VectorExpression(Identifier, Identifier, Identifier)),
 
+  Symbol(Operator(UnaryPlusOp)),
   Symbol(Operator),
-  Symbol(Operator),
-  QuoteExpression(ParenExpression(Operator)),
+  QuoteExpression(ParenExpression(Operator(AssignmentOp))),
 )
 
 
@@ -345,7 +346,7 @@ Program(
   Symbol(Identifier),
   IfStatement(
     if
-    Condition(BinaryExpression(Identifier, Symbol(Identifier)))
+    Condition(BinaryExpression(Identifier, ComparisonOp, Symbol(Identifier)))
     IntegerLiteral,
     ElseClause(else, IntegerLiteral)
     end
@@ -400,6 +401,6 @@ Program(
   IndexExpression(AdjointExpression(Identifier), VectorExpression(Identifier)),
   CallExpression(AdjointExpression(Identifier), Arguments(Identifier)),
   AdjointExpression(Symbol(Identifier))
-  BinaryExpression(AdjointExpression(Identifier), Identifier),
+  BinaryExpression(AdjointExpression(Identifier), TimesOp, Identifier),
 )
 
