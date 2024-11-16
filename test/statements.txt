@@ -323,11 +323,15 @@ Program(
 
 export a
 export a, b, +, (*)
+public a
+public a, b, +, (*)
 
 ==>
 Program(
   ExportStatement(export, Identifier),
   ExportStatement(export, Identifier, Identifier, Operator(UnaryPlusOp), ParenExpression(Operator(TimesOp))),
+  PublicStatement(public, Identifier),
+  PublicStatement(public, Identifier, Identifier, Operator(UnaryPlusOp), ParenExpression(Operator(TimesOp))),
 )
 
 
@@ -357,12 +361,12 @@ import Module: ==, +
 
 ==>
 Program(
-  ImportStatement(using, ImportPath(Identifier)),
-  ImportStatement(using, ImportPath(Identifier), ImportPath(Identifier), ImportPath(Identifier)),
-  ImportStatement(using, ImportPath(Identifier), ImportPath(Identifier), ),
+  UsingStatement(using, ImportPath(Identifier)),
+  UsingStatement(using, ImportPath(Identifier), ImportPath(Identifier), ImportPath(Identifier)),
+  UsingStatement(using, ImportPath(Identifier), ImportPath(Identifier), ),
 
   ImportStatement(import, ImportPath(Identifier, Identifier)),
-  ImportStatement(using, SelectedImport(ImportPath(Identifier), ImportPath(Identifier), ImportPath(Identifier))),
+  UsingStatement(using, SelectedImport(ImportPath(Identifier), ImportPath(Identifier), ImportPath(Identifier))),
   ImportStatement(import, SelectedImport(ImportPath(Identifier), MacroIdentifier(Identifier))),
   ImportStatement(import, SelectedImport(ImportPath(Identifier), Operator(ComparisonOp), Operator(UnaryPlusOp)))
 )
@@ -390,11 +394,11 @@ Program(
   ImportStatement(import, SelectedImport(ImportPath(Identifier), ImportAlias(ImportPath(Identifier), as, Identifier))),
   LineComment,
   ImportStatement(import, SelectedImport(ImportPath(Identifier), ImportAlias(ImportPath(Identifier), as, Identifier), ImportAlias(ImportPath(Identifier), as, Identifier), ImportPath(Identifier)))
-  ImportStatement(using, SelectedImport(ImportPath(Identifier), ImportAlias(ImportPath(Identifier), as, Identifier))),
+  UsingStatement(using, SelectedImport(ImportPath(Identifier), ImportAlias(ImportPath(Identifier), as, Identifier))),
   LineComment,
   ImportStatement(import, SelectedImport(ImportPath(Identifier), ImportAlias(ImportPath(Identifier, Identifier), as, Identifier))),
   ImportStatement(import, SelectedImport(ImportPath(Identifier), ImportAlias(Operator(UnaryPlusOp), as, Operator(UnaryPlusOp)))),
-  ImportStatement(using, SelectedImport(ImportPath(Identifier), ImportAlias(MacroIdentifier(Identifier), as, MacroIdentifier(Identifier))))
+  UsingStatement(using, SelectedImport(ImportPath(Identifier), ImportAlias(MacroIdentifier(Identifier), as, MacroIdentifier(Identifier))))
 )
 
 
