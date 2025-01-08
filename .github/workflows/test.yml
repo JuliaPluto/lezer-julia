@@ -20,12 +20,9 @@ jobs:
           node-version: "20"
 
       - run: yarn install
-        env:
-          NODE_OPTIONS: "--max-old-space-size=8192"
-
-      - run: yarn prepare
-        env:
-          NODE_OPTIONS: "--max-old-space-size=8192"
+        # not needed, faster without:
+        # env:
+          # NODE_OPTIONS: "--max-old-space-size=8192"
 
       - run: yarn test
 
