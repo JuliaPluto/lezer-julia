@@ -460,6 +460,8 @@ macro count(args...); length(args) end
 
 macro Mod.mac() end
 
+macro wow end
+
 ==>
 Program(
   MacroDefinition(
@@ -477,6 +479,11 @@ Program(
   MacroDefinition(
     macro,
     Signature(CallExpression(FieldExpression(Identifier, Field(Identifier)), Arguments)),
+    end
+  ),
+  MacroDefinition(
+    macro,
+    Signature(Identifier),
     end
   )
 )
