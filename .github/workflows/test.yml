@@ -9,8 +9,7 @@ on:
       - main
 
 jobs:
-  run-linters:
-    name: Run linters
+  test:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,6 +20,8 @@ jobs:
           node-version: "20"
 
       - run: yarn install
+        env:
+          NODE_OPTIONS: "--max-old-space-size=8192"
 
       - run: yarn prepare
         env:
