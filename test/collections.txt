@@ -139,6 +139,20 @@ Program(
 
 [x for x in xs]
 UInt[b(c, e) for c in d for e in f]
+[
+  a(1)
+  for a in f
+]
+[
+  a(1)
+  for a in f
+        ,b in e
+]
+[
+  a(1)
+  for a in f
+        for b in e
+]
 
 ==>
 Program(
@@ -157,7 +171,28 @@ Program(
         GenFor(for, ForBinding(Identifier, AssignmentOp(in), Identifier)),
       )
     )
-  )
+  ),
+  ComprehensionExpression(
+    Generator(
+      CallExpression(Identifier, Arguments(IntegerLiteral)),
+      GenFor(
+        for, 
+        ForBinding(Identifier, AssignmentOp(in), Identifier),
+        ForBinding(Identifier, AssignmentOp(in), Identifier),
+      ),
+    )
+  ),
+  ComprehensionExpression(
+    Generator(
+      CallExpression(Identifier, Arguments(IntegerLiteral)),
+      GenFor(
+        for, 
+        ForBinding(Identifier, AssignmentOp(in), Identifier),
+        for,
+        ForBinding(Identifier, AssignmentOp(in), Identifier),
+      ),
+    )
+  ),
 )
 
 
@@ -165,7 +200,10 @@ Program(
 
 (b(c, e) for c in d if e)
 (b(c, e) for c in d, e = 5)
-(b(c, e) for c in d, e = 5 if e)
+(
+  b(c, e)
+  for c in d, e = 5 if e
+)
 
 ==>
 Program(
