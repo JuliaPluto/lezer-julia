@@ -120,9 +120,9 @@ band = "Interpol"
 
 ==>
 Program(
-  Assignment(Identifier, StringLiteral),
+  Assignment(Identifier, AssignmentOp, StringLiteral),
   StringLiteral(Identifier),
-  StringLiteral(ParenExpression(BinaryExpression(IntegerLiteral, Identifier))),
+  StringLiteral(ParenExpression(BinaryExpression(IntegerLiteral, TimesOp, Identifier))),
   StringLiteral(ParenExpression(StringLiteral(ParenExpression(StringLiteral)))),
 )
 
@@ -139,7 +139,7 @@ a "quoted" string"""
 Program(
   StringLiteral,
   StringLiteral(Identifier),
-  StringLiteral(ParenExpression(BinaryExpression(Identifier, Identifier))),
+  StringLiteral(ParenExpression(BinaryExpression(Identifier, UnaryPlusOp, Identifier))),
   StringLiteral(EscapeSequence),
 )
 
@@ -154,9 +154,9 @@ r"fo*"i
 
 ==>
 Program(
-  Assignment(Identifier, NsStringLiteral(Identifier)),
-  Assignment(Identifier, NsStringLiteral(Identifier)),
-  Assignment(Identifier, NsStringLiteral(Identifier)),
+  Assignment(Identifier, AssignmentOp, NsStringLiteral(Identifier)),
+  Assignment(Identifier, AssignmentOp, NsStringLiteral(Identifier)),
+  Assignment(Identifier, AssignmentOp, NsStringLiteral(Identifier)),
   NsStringLiteral(Identifier, EscapeSequence),
   NsStringLiteral(Identifier, Identifier),
 )
@@ -181,7 +181,7 @@ Program(
   CommandLiteral(Identifier),
   CommandLiteral(EscapeSequence, EscapeSequence),
   CommandLiteral(EscapeSequence, EscapeSequence),
-  CommandLiteral(ParenExpression(BinaryExpression(Identifier, Identifier))),
+  CommandLiteral(ParenExpression(BinaryExpression(Identifier, UnaryPlusOp, Identifier))),
   CommandLiteral(EscapeSequence),
 )
 
@@ -205,7 +205,7 @@ multi line comment
 Program(
   LineComment
   BlockComment
-  Assignment(Identifier, BlockComment, IntegerLiteral),
+  Assignment(Identifier, AssignmentOp, BlockComment, IntegerLiteral),
   BlockComment,
   BlockComment,
   BlockComment(BlockComment(BlockComment)),

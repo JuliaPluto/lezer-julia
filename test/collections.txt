@@ -29,10 +29,13 @@ Program(
 
 ==>
 Program(
-  TupleExpression(KwArg(Identifier, IntegerLiteral)),
-  ParenExpression(Assignment(Identifier, IntegerLiteral)),
+  TupleExpression(KwArg(Identifier, AssignmentOp, IntegerLiteral)),
+  ParenExpression(Assignment(Identifier, AssignmentOp, IntegerLiteral)),
   LineComment,
-  TupleExpression(KwArg(Identifier, IntegerLiteral), KwArg(Identifier, IntegerLiteral))
+  TupleExpression(
+    KwArg(Identifier, AssignmentOp, IntegerLiteral),
+    KwArg(Identifier, AssignmentOp, IntegerLiteral),
+  )
 )
 
 
@@ -50,8 +53,8 @@ Program(
   TupleExpression(KeywordArguments),
   TupleExpression(KeywordArguments(Identifier)),
   TupleExpression(KeywordArguments(Identifier, Identifier)),
-  TupleExpression(KeywordArguments(KwArg(Identifier, IntegerLiteral))),
-  TupleExpression(KeywordArguments(KwArg(Identifier, IntegerLiteral), KwArg(Identifier, IntegerLiteral))),
+  TupleExpression(KeywordArguments(KwArg(Identifier, AssignmentOp, IntegerLiteral))),
+  TupleExpression(KeywordArguments(KwArg(Identifier, AssignmentOp, IntegerLiteral), KwArg(Identifier, AssignmentOp, IntegerLiteral))),
   TupleExpression(KeywordArguments(Identifier, FieldExpression(Identifier, Field(Identifier)))),
 )
 
@@ -142,7 +145,7 @@ Program(
   ComprehensionExpression(
     Generator(
       Identifier,
-      GenFor(for, ForBinding(Identifier, in, Identifier)),
+      GenFor(for, ForBinding(Identifier, AssignmentOp(in), Identifier)),
     )
   ),
   IndexExpression(
@@ -150,8 +153,8 @@ Program(
     ComprehensionExpression(
       Generator(
         CallExpression(Identifier, Arguments(Identifier, Identifier)),
-        GenFor(for, ForBinding(Identifier, in, Identifier)),
-        GenFor(for, ForBinding(Identifier, in, Identifier)),
+        GenFor(for, ForBinding(Identifier, AssignmentOp(in), Identifier)),
+        GenFor(for, ForBinding(Identifier, AssignmentOp(in), Identifier)),
       )
     )
   )
@@ -169,20 +172,20 @@ Program(
   ParenExpression(
     Generator(
       CallExpression(Identifier, Arguments(Identifier, Identifier)),
-      GenFor(for, ForBinding(Identifier, in, Identifier)),
+      GenFor(for, ForBinding(Identifier, AssignmentOp(in), Identifier)),
       GenFilter(if, Identifier),
     )
   ),
   ParenExpression(
     Generator(
       CallExpression(Identifier, Arguments(Identifier, Identifier)),
-      GenFor(for, ForBinding(Identifier, in, Identifier), ForBinding(Identifier, IntegerLiteral)),
+      GenFor(for, ForBinding(Identifier, AssignmentOp(in), Identifier), ForBinding(Identifier, AssignmentOp, IntegerLiteral)),
     )
   ),
   ParenExpression(
     Generator(
       CallExpression(Identifier, Arguments(Identifier, Identifier)),
-      GenFor(for, ForBinding(Identifier, in, Identifier), ForBinding(Identifier, IntegerLiteral)),
+      GenFor(for, ForBinding(Identifier, AssignmentOp(in), Identifier), ForBinding(Identifier, AssignmentOp, IntegerLiteral)),
       GenFilter(if, Identifier),
     )
   ),
@@ -202,7 +205,7 @@ Program(
     Arguments(
       Generator(
         Identifier,
-        GenFor(for, ForBinding(Identifier, in, Identifier)),
+        GenFor(for, ForBinding(Identifier, AssignmentOp(in), Identifier)),
       )
     )
   )
@@ -213,7 +216,7 @@ Program(
       IntegerLiteral,
       Generator(
         Identifier,
-        GenFor(for, ForBinding(Identifier, Identifier)),
+        GenFor(for, ForBinding(Identifier, AssignmentOp, Identifier)),
       )
     )
   ),
@@ -225,9 +228,10 @@ Program(
       Generator(
         BinaryExpression(
           Identifier,
+          UnaryPlusOp,
           Identifier,
         )
-        GenFor(for, ForBinding(Identifier, Identifier), ForBinding(Identifier, Identifier)),
+        GenFor(for, ForBinding(Identifier, AssignmentOp, Identifier), ForBinding(Identifier, AssignmentOp, Identifier)),
       )
     )
   )

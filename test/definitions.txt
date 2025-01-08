@@ -38,10 +38,10 @@ Program(
 
   AbstractDefinition(abstract, type, TypeHead(ParametrizedExpression(Identifier, BraceExpression(Identifier))), end),
   AbstractDefinition(abstract, type, TypeHead(ParametrizedExpression(Identifier, BraceExpression(Identifier, Identifier))), end),
-  AbstractDefinition(abstract, type, TypeHead(ParametrizedExpression(Identifier, BraceExpression(BinaryExpression(Identifier, Identifier)))), end),
+  AbstractDefinition(abstract, type, TypeHead(ParametrizedExpression(Identifier, BraceExpression(BinaryExpression(Identifier, TypeComparisonOp, Identifier)))), end),
 
-  AbstractDefinition(abstract, type, TypeHead(BinaryExpression(Identifier, Identifier)), end),
-  AbstractDefinition(abstract, type, TypeHead(BinaryExpression(ParametrizedExpression(Identifier, BraceExpression(Identifier)), Identifier)), end),
+  AbstractDefinition(abstract, type, TypeHead(BinaryExpression(Identifier, TypeComparisonOp, Identifier)), end),
+  AbstractDefinition(abstract, type, TypeHead(BinaryExpression(ParametrizedExpression(Identifier, BraceExpression(Identifier)), TypeComparisonOp, Identifier)), end),
 )
 
 
@@ -54,7 +54,7 @@ primitive type Ptr{T} 32 end
 ==>
 Program(
   PrimitiveDefinition(primitive, type, TypeHead(Identifier), IntegerLiteral, end),
-  PrimitiveDefinition(primitive, type, TypeHead(BinaryExpression(Identifier, Identifier)), IntegerLiteral, end),
+  PrimitiveDefinition(primitive, type, TypeHead(BinaryExpression(Identifier, TypeComparisonOp, Identifier)), IntegerLiteral, end),
   PrimitiveDefinition(primitive, type, TypeHead(ParametrizedExpression(Identifier, BraceExpression(Identifier))), IntegerLiteral, end),
 )
 
@@ -123,7 +123,8 @@ Program(
     struct,
     TypeHead(
       BinaryExpression(
-        ParametrizedExpression(Identifier, BraceExpression(BinaryExpression(Identifier, Identifier))),
+        ParametrizedExpression(Identifier, BraceExpression(BinaryExpression(Identifier, TypeComparisonOp, Identifier))),
+        TypeComparisonOp,
         Identifier
       )
     ),
@@ -144,7 +145,7 @@ end
 Program(
   StructDefinition(
     mutable, struct,
-    TypeHead(BinaryExpression(Identifier, Identifier)),
+    TypeHead(BinaryExpression(Identifier, TypeComparisonOp, Identifier)),
     BinaryExpression(Identifier, Type(ParametrizedExpression(Identifier, BraceExpression(Identifier)))),
     end
   ),
@@ -198,8 +199,8 @@ end
 Program(
   FunctionDefinition(
     function,
-    Signature(CallExpression(Operator, Arguments(Identifier, Identifier))),
-    BinaryExpression(Identifier, Identifier),
+    Signature(CallExpression(Operator(PlusOp), Arguments(Identifier, Identifier))),
+    BinaryExpression(Identifier, UnaryPlusOp, Identifier),
     end,
   )
 )
@@ -346,7 +347,7 @@ Program(
         BinaryExpression(
           Identifier,
           where,
-          Type(BraceExpression(BinaryExpression(Identifier, Identifier), Identifier)),
+          Type(BraceExpression(BinaryExpression(Identifier, TypeComparisonOp, Identifier), Identifier)),
         )
       )
     ),
@@ -410,7 +411,7 @@ Program(
   FunctionDefinition(
     function,
     Signature(
-      CallExpression(Identifier, Arguments(Identifier, KwArg(Identifier, IntegerLiteral)))
+      CallExpression(Identifier, Arguments(Identifier, KwArg(Identifier, AssignmentOp, IntegerLiteral)))
     ),
     OpenTuple(Identifier, Identifier),
     end
