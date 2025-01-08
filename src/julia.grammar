@@ -137,7 +137,13 @@ definition[@isGroup=Definition] {
   | PrimitiveDefinition { kwid<'primitive'> kwid<'type'> TypeHead IntegerLiteral end }
   | StructDefinition { kwid<'mutable'>? kw<'struct'> TypeHead (_t block?)? end } // TODO: Allow skipping terminator
   | ModuleDefinition { (kw<'module'> | kw<'baremodule'>) Identifier _t? block? end }
-  | MacroDefinition { kw<'macro'> (Signature { Identifier } | (Signature { CallExpression } _t? block? end)) }
+  | MacroDefinition { 
+      kw<'macro'>
+      ( Signature { Identifier }
+      | Signature { CallExpression } _t? block?
+      )
+      end
+    }
   | FunctionDefinition {
       kw<'function'>
       ( Signature { Identifier }
