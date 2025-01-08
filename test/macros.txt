@@ -169,7 +169,12 @@ Program(
 
 # Closed macro call expressions - Do blocks
 
-@test() do x, y
+
+@test() do x
+  xs
+end
+
+@test() do x, (y,z)
   body
 end
 
@@ -181,11 +186,22 @@ Program(
     Arguments,
     DoClause(
       do,
-      Parameters(Identifier, Identifier),
+      Parameters(Identifier),
       Identifier,
       end
     )
-  )
+  ),
+  
+  MacrocallExpression(
+    MacroIdentifier(Identifier),
+    Arguments,
+    DoClause(
+      do,
+      Parameters(Identifier, TupleExpression(Identifier,Identifier)),
+      Identifier,
+      end
+    )
+  ),
 )
 
 
