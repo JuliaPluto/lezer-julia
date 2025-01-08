@@ -111,7 +111,7 @@ simple-statement {
 
 Condition { expr _t? }
 ElseIfClause { kw<'elseif'> Condition block? }
-CatchClause  { kw<'catch'> block? } // TODO: ExceptionCapture
+CatchClause  { kw<'catch'> ExceptionCapture { !simple Identifier }? block? }
 ElseClause   { kw<'else'> block? }
 FinallyClause{ kw<'finally'> block? }
 
