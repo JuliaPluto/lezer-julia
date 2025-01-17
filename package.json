@@ -1,6 +1,6 @@
 {
   "name": "@plutojl/lezer-julia",
-  "version": "0.12.2",
+  "version": "0.12.3",
   "description": "lezer-based Julia grammar",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
