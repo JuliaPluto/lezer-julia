@@ -244,7 +244,7 @@ Program(
 
 # Function call expressions with do blocks
 
-reduce(xs) do x, y
+reduce(xs) do x, (y,(z,w))
   f(x, y)
 end
 
@@ -255,7 +255,9 @@ Program(
     Arguments(Identifier),
     DoClause(
       do,
-      Parameters(Identifier, Identifier),
+      Parameters(Identifier, 
+        TupleExpression(Identifier, TupleExpression(Identifier, Identifier)),
+      ),
       CallExpression(
         Identifier,
         Arguments(Identifier, Identifier),
@@ -296,6 +298,29 @@ Program(
     DoClause(
       do,
       Parameters(BinaryExpression(Identifier, Type(Identifier))),
+      end
+    )
+  )
+)
+
+
+# Function call expressions with do blocks - typed and exploded parameter
+
+f(xs) do (x,y)::Int; end
+
+==>
+Program(
+  CallExpression(
+    Identifier,
+    Arguments(Identifier),
+    DoClause(
+      do,
+      Parameters(
+        BinaryExpression(
+          TupleExpression(Identifier, Identifier),
+          Type(Identifier),
+        )
+      ),
       end
     )
   )
