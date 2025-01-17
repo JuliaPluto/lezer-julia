@@ -219,7 +219,7 @@ if true 1 else 0 end
 
 if a
   b()
-elseif c
+elseif c 
   d()
   d()
 else
@@ -280,6 +280,16 @@ finally
     close(resource)
 end
 
+try
+catch e 
+ e
+end
+
+try catch e e end
+try catch e end
+try catch end
+try finally end
+
 ==>
 Program(
   TryStatement(
@@ -300,6 +310,52 @@ Program(
     )
     end
   )
+  TryStatement(
+    try
+    CatchClause(
+      catch
+      ExceptionCapture(Identifier)
+      Identifier
+    )
+    end
+  )
+  
+  TryStatement(
+    try
+    CatchClause(
+      catch
+      ExceptionCapture(Identifier)
+      Identifier
+    )
+    end
+  )
+  
+  TryStatement(
+    try
+    CatchClause(
+      catch
+      ExceptionCapture(Identifier)
+    )
+    end
+  )
+  
+  TryStatement(
+    try
+    CatchClause(
+      catch
+    )
+    end
+  )
+  
+  TryStatement(
+    try
+    FinallyClause(
+      finally
+    )
+    end
+  )
+  
+  
 )
 
 
