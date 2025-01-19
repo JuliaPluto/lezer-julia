@@ -1,24 +1,31 @@
+# NPM ?= npm
+# NPM ?= pnpm
+NPM ?= yarn
+
 # Written by humans
-SRC = src/julia.grammar src/tokens.js
+SRC = src/*
 
 # Bundled by rollup
 INDEX = dist/index.js dist/index.cjs
 
 $(INDEX): $(SRC) # Generate parser and bundle into usable JS files
-	npm run prepare
+	$(NPM) run prepare
 
-.PHONY: test check clean
+.PHONY: install test check clean
+
+install:
+	$(NPM) install
 
 test: $(INDEX) test/*
-	npm run test
+	$(NPM) run test
 
 check: # Ensure tooling is installed
 	node --version
-	npm --version
+	$(NPM) --version
 
 clean: # Remove generated files
 	rm -f $(INDEX)
 
 release:
-	npm publish
+	$(NPM) publish
 	git tag v$(cat package.json | jq -r .version)
