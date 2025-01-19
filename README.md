@@ -21,7 +21,7 @@ To rebuild the parser after changing the grammar or the tokenizer:
 ```
 yarn run prepare
 ```
-If the build crashes with a GC related error, run `export NODE_OPTIONS="--max-old-space-size=8192"` and try again.
+If the build crashes with a GC related error, run `export NODE_OPTIONS='--max-old-space-size=8192'` and try again.
 
 
 To test the parser:
