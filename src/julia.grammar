@@ -203,7 +203,7 @@ Generator<expr> { expr !simple GenFor (GenFor | GenFilter)* }
 MatrixRow { (!mat expr-idx)+ }
 
 array {
-  ( ComprehensionExpression { '[' Generator<expr-idx> ']' }
+  ( ComprehensionExpression[@dynamicPrecedence=8] { '[' expr-idx !simple GenFor (GenFor | GenFilter)* ']' }
   | MatrixExpression { '[' MatrixRow (_t MatrixRow)* _t? ']' }
   | VectorExpression { '[' sep<',', (!vec (expr-idx | binding-idx<'Assignment'>))> ']' }
   )
