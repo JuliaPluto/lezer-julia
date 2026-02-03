@@ -121,6 +121,7 @@ Program(
 
 
 # Let statements - Space after let
+# (Note: lines with "let " have intentional trailing space)
 
 let 
 end

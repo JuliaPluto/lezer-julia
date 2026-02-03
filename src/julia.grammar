@@ -514,6 +514,10 @@ _t { newline | semicolon }
 
   // OTHER TOKENS
 
+  // Whitespace excludes newlines (\n and \r) to allow the external newline
+  // tokenizer to handle them as significant statement terminators when needed.
+  // Unicode line/paragraph separators (U+2028, U+2029) are included as they
+  // are not typically used as statement terminators in Julia.
   _ws { $[ \t\u000b\u000c\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+ }
   semicolon { ';'+ }
 
