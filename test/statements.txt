@@ -120,6 +120,27 @@ Program(
 )
 
 
+# Let statements - Space after let
+# (Note: lines with "let " have intentional trailing space)
+
+let 
+end
+
+let 
+    code
+end
+
+==>
+Program(
+  LetStatement(let, end),
+  LetStatement(
+    let,
+    Identifier,
+    end
+  )
+)
+
+
 # For statements
 
 for x in xs end
