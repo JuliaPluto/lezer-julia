@@ -221,9 +221,61 @@ export const newline = new ExternalTokenizer(
     while (input.peek(offset) === CHAR_NEWLINE) {
       offset += 1;
     }
-    if (offset >= 1 && stack.canShift(terms.newline)) {
-      input.acceptToken(terms.newline, offset);
-      return;
+    if (offset >= 1) {
+      // Always try to shift a newline if one is present and the parser state allows it
+      if (stack.canShift(terms.newline)) {
+        input.acceptToken(terms.newline, offset);
+        return;
+      }
+      
+      // Additional check: If we cannot shift a newline but there IS a newline character,
+      // look ahead to see what comes next. If it's a keyword that typically starts
+      // a new statement, we should force the newline to be a terminator.
+      
+      // Look ahead past the newline(s) and any whitespace to see what comes next
+      let nextOffset = offset;
+      let nextChar = input.peek(nextOffset);
+      
+      // Skip any whitespace (but not newlines) after the first newline
+      while (nextChar !== -1 && nextChar !== CHAR_NEWLINE && isWhitespace(nextChar)) {
+        nextOffset++;
+        nextChar = input.peek(nextOffset);
+      }
+      
+      // Check if we can read a potential keyword
+      // Check for common statement-starting keywords: for, while, if, else, end, return, break, continue, let, try, catch, finally, begin, quote
+      const keywords = [
+        'for', 'while', 'if', 'else', 'elseif', 'end', 'return', 'break', 'continue',
+        'let', 'try', 'catch', 'finally', 'begin', 'quote', 'const', 'global', 'local',
+        'export', 'import', 'using', 'function', 'macro', 'struct', 'mutable', 'abstract',
+        'primitive', 'type', 'module', 'baremodule'
+      ];
+      
+      for (const keyword of keywords) {
+        let matches = true;
+        for (let i = 0; i < keyword.length; i++) {
+          const c = input.peek(nextOffset + i);
+          if (c !== keyword.charCodeAt(i)) {
+            matches = false;
+            break;
+          }
+        }
+        
+        if (matches) {
+          // Check that the keyword is followed by a non-identifier character
+          // (to avoid matching "ford" as "for")
+          const afterChar = input.peek(nextOffset + keyword.length);
+          if (afterChar === -1 || 
+              !(( afterChar >= CHAR_A && afterChar <= CHAR_Z) ||
+                (afterChar >= CHAR_a && afterChar <= CHAR_z) ||
+                (afterChar >= CHAR_0 && afterChar <= CHAR_9) ||
+                afterChar === CHAR_UNDERSCORE)) {
+            // Found a keyword, accept the newline
+            input.acceptToken(terms.newline, offset);
+            return;
+          }
+        }
+      }
     }
   }
 );
