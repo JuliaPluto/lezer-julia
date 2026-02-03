@@ -153,13 +153,17 @@ Program(
 
 1:10
 x:y+1
-# 1..10 # TODO: Fix conflict with ImportPath: BinaryExpression(IntegerLiteral, IntegerLiteral)
+1..10
+a..b
+1 .. 2
 
 ==>
 Program(
   BinaryExpression(IntegerLiteral, Colon, IntegerLiteral),
   BinaryExpression(Identifier, Colon, BinaryExpression(Identifier, UnaryPlusOp, IntegerLiteral)),
-  LineComment,
+  BinaryExpression(IntegerLiteral, EllipsisOp, IntegerLiteral),
+  BinaryExpression(Identifier, EllipsisOp, Identifier),
+  BinaryExpression(IntegerLiteral, EllipsisOp, IntegerLiteral),
 )
 
 
@@ -242,7 +246,7 @@ Program(
 
 x = +
 ⪯ = .≤
-foo(^, ÷, -)
+foo(^, ÷, -, ..)
 
 ==>
 Program(
@@ -250,7 +254,7 @@ Program(
   Operator(UnaryOp),
   Assignment(Identifier, AssignmentOp, Operator(UnaryPlusOp)),
   Assignment(Operator(ComparisonOp), AssignmentOp, Operator(ComparisonOp)),
-  CallExpression(Identifier, Arguments(Operator(PowerOp), Operator(TimesOp), Operator(UnaryPlusOp))),
+  CallExpression(Identifier, Arguments(Operator(PowerOp), Operator(TimesOp), Operator(UnaryPlusOp), Operator(EllipsisOp))),
 )
 
 
