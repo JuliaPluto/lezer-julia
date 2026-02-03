@@ -216,7 +216,10 @@ array {
 }
 
 
-DoClause[group=CompoundStatement]{ kw<'do'> Parameters { sep1<',', Identifier | TupleExpression | operation<expr>>? } _t block? end }
+DoClause[group=CompoundStatement]{ 
+  kw<'do'> Parameters { sep1<',', Identifier | TupleExpression | operation<expr>>? } 
+  (_t block? end | end) 
+}
 
 CallExpression {
   (primary-expr (immediateDot '.')? | Operator)
