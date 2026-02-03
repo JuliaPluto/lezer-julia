@@ -178,6 +178,15 @@ Program(
       GenFor(
         for, 
         ForBinding(Identifier, AssignmentOp(in), Identifier),
+      ),
+    )
+  ),
+  ComprehensionExpression(
+    Generator(
+      CallExpression(Identifier, Arguments(IntegerLiteral)),
+      GenFor(
+        for, 
+        ForBinding(Identifier, AssignmentOp(in), Identifier),
         ForBinding(Identifier, AssignmentOp(in), Identifier),
       ),
     )
@@ -188,7 +197,9 @@ Program(
       GenFor(
         for, 
         ForBinding(Identifier, AssignmentOp(in), Identifier),
-        for,
+      ),
+      GenFor(
+        for, 
         ForBinding(Identifier, AssignmentOp(in), Identifier),
       ),
     )
