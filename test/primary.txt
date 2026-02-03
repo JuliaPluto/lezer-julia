@@ -286,6 +286,24 @@ Program(
 )
 
 
+# Function call expressions with do blocks - single line without semicolon
+
+f() do x end
+
+==>
+Program(
+  CallExpression(
+    Identifier,
+    Arguments,
+    DoClause(
+      do,
+      Parameters(Identifier),
+      end
+    )
+  )
+)
+
+
 # Function call expressions with do blocks - typed parameter
 
 f(xs) do x::Int; end
