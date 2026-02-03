@@ -111,7 +111,7 @@ simple-statement {
 
 Condition { expr _t? }
 ElseIfClause { kw<'elseif'> Condition block? }
-CatchClause  { kw<'catch'> block? } // TODO: ExceptionCapture
+CatchClause  { kw<'catch'> ExceptionCapture { !simple Identifier }? block? }
 ElseClause   { kw<'else'> block? }
 FinallyClause{ kw<'finally'> block? }
 
@@ -137,7 +137,13 @@ definition[@isGroup=Definition] {
   | PrimitiveDefinition { kwid<'primitive'> kwid<'type'> TypeHead IntegerLiteral end }
   | StructDefinition { kwid<'mutable'>? kw<'struct'> TypeHead (_t block?)? end } // TODO: Allow skipping terminator
   | ModuleDefinition { (kw<'module'> | kw<'baremodule'>) Identifier _t? block? end }
-  | MacroDefinition { kw<'macro'> Signature { CallExpression } _t? block? end }
+  | MacroDefinition { 
+      kw<'macro'>
+      ( Signature { Identifier }
+      | Signature { CallExpression } _t? block?
+      )
+      end
+    }
   | FunctionDefinition {
       kw<'function'>
       ( Signature { Identifier }
@@ -210,7 +216,10 @@ array {
 }
 
 
-DoClause[group=CompoundStatement]{ kw<'do'> Parameters { sep1<',', Identifier | operation<expr>>? } _t block? end }
+DoClause[group=CompoundStatement]{ 
+  kw<'do'> Parameters { sep1<',', Identifier | TupleExpression | operation<expr>>? } 
+  (_t block? end | end) 
+}
 
 CallExpression {
   (primary-expr (immediateDot '.')? | Operator)

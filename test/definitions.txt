@@ -419,6 +419,29 @@ Program(
 )
 
 
+# Function definitions - exploded parameters
+
+function f((x,(y1,y2)), (u,v)=2)
+  x, y
+end
+
+==>
+Program(
+  FunctionDefinition(
+    function,
+    Signature(
+      CallExpression(Identifier, Arguments(
+        TupleExpression(Identifier,TupleExpression(Identifier,Identifier)), 
+        KwArg(TupleExpression(Identifier,Identifier), AssignmentOp, IntegerLiteral),
+      ))
+    ),
+    OpenTuple(Identifier, Identifier),
+    end
+  )
+)
+
+
+
 # Function definitions - keyword parameters
 
 function a(; x, y) end
@@ -460,6 +483,8 @@ macro count(args...); length(args) end
 
 macro Mod.mac() end
 
+macro wow end
+
 ==>
 Program(
   MacroDefinition(
@@ -477,6 +502,11 @@ Program(
   MacroDefinition(
     macro,
     Signature(CallExpression(FieldExpression(Identifier, Field(Identifier)), Arguments)),
+    end
+  ),
+  MacroDefinition(
+    macro,
+    Signature(Identifier),
     end
   )
 )
