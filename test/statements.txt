@@ -120,6 +120,26 @@ Program(
 )
 
 
+# Let statements - Space after let
+
+let 
+end
+
+let 
+    code
+end
+
+==>
+Program(
+  LetStatement(let, end),
+  LetStatement(
+    let,
+    Identifier,
+    end
+  )
+)
+
+
 # For statements
 
 for x in xs end
