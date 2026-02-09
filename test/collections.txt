@@ -161,6 +161,24 @@ Program(
 )
 
 
+# Comprehension arrays with macros
+
+[@show(index) for index in eachindex(r_v)]
+
+==>
+Program(
+  ComprehensionExpression(
+    Generator(
+      MacrocallExpression(
+        MacroIdentifier(Identifier),
+        Arguments(Identifier),
+      ),
+      GenFor(for, ForBinding(Identifier, AssignmentOp(in), CallExpression(Identifier, Arguments(Identifier)))),
+    )
+  )
+)
+
+
 # Generator expressions
 
 (b(c, e) for c in d if e)
