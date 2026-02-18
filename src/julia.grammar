@@ -380,7 +380,7 @@ string {
   ns<delim, content, esc> { _s<delim, content | '$' | '\\' | [@name=EscapeSequence]{ '\\\\' | esc }> }
 
   // Commands support the same interpolations as InterpExpression.
-  str-interp { Identifier | parens<expr> }
+  str-interp { Identifier | ParenExpression | TupleExpression }
   cmd-interp { Identifier | BraceExpression | ParenExpression | TupleExpression | array }
 
   // Strings can be single or triple quoted
