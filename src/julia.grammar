@@ -202,14 +202,15 @@ TupleExpression { tuple }
 
 // NOTE: binding `in` is a keyword, membership `in` is a function
 ForBinding { kwid<'outer'>? (Identifier | TupleExpression) !assignment AssignmentOp { '=' | '∈' | kwid<'in'> } expr }
-GenFor { kw<'for'> sep1<(!tup ','), ForBinding> }
+GenFor { kw<'for'> sep1<(!tup ','), ForBinding> (kw<'for'> sep1<(!tup ','), ForBinding>)* }
 GenFilter { kw<'if'> expr }
-Generator<expr> { expr !simple GenFor (GenFor | GenFilter)* }
+Generator<expr> { expr !simple GenFor GenFilter* }
+ArrayGenerator[@name=Generator]<expr> { expr ~gen-or-mat _t? !simple GenFor GenFilter* }
 
-MatrixRow { (!mat expr-idx)+ }
+MatrixRow { (expr-idx ~gen-or-mat)+ }
 
 array {
-  ( ComprehensionExpression { '[' Generator<expr-idx> ']' }
+  ( ComprehensionExpression { '[' ArrayGenerator<expr-idx> ']' }
   | MatrixExpression { '[' MatrixRow (_t MatrixRow)* _t? ']' }
   | VectorExpression { '[' sep<',', (!vec (expr-idx | binding-idx<'Assignment'>))> ']' }
   )
