@@ -2,9 +2,9 @@
   quote @left
   dot @left
   where @left // Inner `where`
-  decl @left
   power @right
   unary @right
+  decl @left
   juxt @right
   bitshift @left
   rational @left
@@ -73,6 +73,9 @@ expression<expr> {
 
 // Expression in "normal" context
 expr { expression<expr> | simple-statement | compound-statement | definition }
+
+// Type expressions (just an alias for expr, but creates a named node)
+Type { !decl expr }
 
 // Expressions inside arrays
 expr-idx { expression<expr-idx> | kw<'begin'> | kw<'end'> }
@@ -283,14 +286,14 @@ Symbol {
 operation<expr> {
   ( SplatExpression { expr !colon '...' }
   | UnaryExpression { (TildeOp | TypeComparisonOp | UnaryOp | UnaryPlusOp) !unary expr }
-  | [@name=UnaryExpression] { '::' !unary Type { expr } }
+  | [@name=UnaryExpression] { '::' !unary Type }
   | BinaryExpression<expr>
   )
 }
 
 BinaryExpression<expr> {
-  ( expr !where      kwid<'where'> !where Type { expr }
-  | expr !decl       '::' Type { expr }
+  ( expr !where      kwid<'where'> !where Type
+  | expr !decl       '::' !decl Type
   | expr !power      PowerOp !power expr
   | expr !bitshift   BitshiftOp !bitshift expr
   | expr !rational   RationalOp !rational expr
