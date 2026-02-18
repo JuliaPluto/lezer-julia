@@ -120,7 +120,7 @@ compound-statement[@isGroup=CompoundStatement] {
   | QuoteStatement { kw<'quote'> block? end }
   | WhileStatement { kw<'while'> Condition block? end }
   | ForStatement { kw<'for'> sep1<',', ForBinding> _t? block? end }
-  | LetStatement { kw<'let'> sep1<',', LetBinding { binding<'Assignment'> | Identifier }>? _t block? end }
+  | LetStatement { kw<'let'> sep1<',', LetBinding { binding<'Assignment'> | Identifier }>? (_t block? end | end) }
   | IfStatement {
       kw<'if'> Condition block? ElseIfClause* ElseClause? end
     }

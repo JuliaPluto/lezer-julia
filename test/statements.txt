@@ -120,6 +120,29 @@ Program(
 )
 
 
+# Let statements - Single-line
+
+let end
+let x end
+let x = 1 end
+let a = 1; a end
+let; 123 end
+let
+end
+
+==>
+Program(
+  LetStatement(let, end),
+  LetStatement(let, LetBinding(Identifier), end),
+  LetStatement(let, LetBinding(Assignment(Identifier, AssignmentOp, IntegerLiteral)), end),
+  LetStatement(let, LetBinding(Assignment(Identifier, AssignmentOp, IntegerLiteral)), Identifier, end),
+  LetStatement(let, IntegerLiteral, end),
+  LetStatement(let, end),
+)
+
+
+
+
 # For statements
 
 for x in xs end
