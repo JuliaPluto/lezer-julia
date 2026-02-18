@@ -127,6 +127,8 @@ let x end
 let x = 1 end
 let a = 1; a end
 let; 123 end
+let
+end
 
 ==>
 Program(
@@ -135,7 +137,10 @@ Program(
   LetStatement(let, LetBinding(Assignment(Identifier, AssignmentOp, IntegerLiteral)), end),
   LetStatement(let, LetBinding(Assignment(Identifier, AssignmentOp, IntegerLiteral)), Identifier, end),
   LetStatement(let, IntegerLiteral, end),
+  LetStatement(let, end),
 )
+
+
 
 
 # For statements
