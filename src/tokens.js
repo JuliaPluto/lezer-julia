@@ -215,6 +215,7 @@ export const word = tokenizeIdentifier(terms.word);
 
 // NEWLINE TERMINATORS
 //
+// Documentation written by 🤖
 // Julia uses newlines as statement separators inside blocks
 // (e.g. function bodies, begin/end, for/end). The grammar rule is:
 //
