@@ -304,7 +304,7 @@ finally
 end
 
 try
-catch e 
+catch e
  e
 end
 
@@ -313,6 +313,15 @@ try catch e end
 try catch end
 try finally end
 
+try
+catch e_with_a_space_behind_it 
+end
+
+try
+catch e_with_a_space_behind_it 
+  body
+end
+
 ==>
 Program(
   TryStatement(
@@ -320,7 +329,7 @@ Program(
     Assignment(Identifier AssignmentOp CallExpression(Identifier Arguments(Identifier))),
     CatchClause(
       catch
-      Identifier
+      ExceptionCapture(Identifier)
       CallExpression(Identifier Arguments(Symbol(Identifier) Identifier))
     )
     ElseClause(
@@ -377,8 +386,27 @@ Program(
     )
     end
   )
-  
-  
+
+  TryStatement(
+    try
+    CatchClause(
+      catch
+      ExceptionCapture(Identifier)
+    )
+    end
+  )
+
+  TryStatement(
+    try
+    CatchClause(
+      catch
+      ExceptionCapture(Identifier)
+      Identifier
+    )
+    end
+  )
+
+
 )
 
 
@@ -532,4 +560,101 @@ Program(
 
   GlobalStatement(global, Assignment(CallExpression(Identifier, Arguments), AssignmentOp, IntegerLiteral)),
   GlobalStatement(global, FunctionDefinition(function, Signature(CallExpression(Identifier, Arguments)), IntegerLiteral, end)),
+)
+
+
+# Trailing space before for loop - issue #36
+
+function f()
+  x()
+  for i in z
+  end
+end
+
+==>
+Program(
+  FunctionDefinition(
+    function,
+    Signature(CallExpression(Identifier, Arguments)),
+    CallExpression(Identifier, Arguments),
+    ForStatement(
+      for,
+      ForBinding(Identifier, AssignmentOp(in), Identifier),
+      end
+    ),
+    end
+  )
+)
+
+
+# Trailing space before for loop - issue #36 - with trailing space
+
+function f()
+  x() 
+  for i in z
+  end
+end
+
+==>
+Program(
+  FunctionDefinition(
+    function,
+    Signature(CallExpression(Identifier, Arguments)),
+    CallExpression(Identifier, Arguments),
+    ForStatement(
+      for,
+      ForBinding(Identifier, AssignmentOp(in), Identifier),
+      end
+    ),
+    end
+  )
+)
+
+
+# Trailing space - exact issue #36 example
+
+@model function single_source_model()
+    MvNormal() 
+    for i in z
+    end
+end
+
+==>
+Program(
+  MacrocallExpression(
+    MacroIdentifier(Identifier),
+    MacroArguments(
+      FunctionDefinition(
+        function,
+        Signature(CallExpression(Identifier, Arguments)),
+        CallExpression(Identifier, Arguments),
+        ForStatement(
+          for,
+          ForBinding(Identifier, AssignmentOp(in), Identifier),
+          end
+        ),
+        end
+      )
+    )
+  )
+)
+
+
+# Trailing space - multiple statements in begin block
+
+begin
+  x 
+  y
+  z
+end
+
+==>
+Program(
+  BeginStatement(
+    begin,
+    Identifier,
+    Identifier,
+    Identifier,
+    end
+  )
 )

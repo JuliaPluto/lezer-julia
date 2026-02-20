@@ -214,14 +214,48 @@ export const Identifier = tokenizeIdentifier(terms.Identifier);
 export const word = tokenizeIdentifier(terms.word);
 
 // NEWLINE TERMINATORS
+//
+// Julia uses newlines as statement separators inside blocks
+// (e.g. function bodies, begin/end, for/end). The grammar rule is:
+//
+//   block { top-level (_t top-level)* _t? }
+//   _t    { newline | semicolon }
+//
+// The `newline` token is produced by this external tokenizer rather than
+// by the built-in tokenizer or the @skip rule, because:
+//
+//   1. Context-sensitivity: `newline` should only be produced when the
+//      parser is in a state where a statement separator is valid
+//      (checked via stack.canShift). Inside expressions that span multiple
+//      lines (e.g. the right-hand side of `x = a +\n  b`) the parser
+//      state does not allow a newline token, so it is not produced and
+//      the skip rule consumes the newline as ordinary whitespace instead.
+//
+//   2. Trailing whitespace: external tokenizers run before the @skip rule.
+//      Without special handling, a trailing space on a line (`x() \n`)
+//      would cause the tokenizer to see a space rather than a newline, and
+//      return without producing a token. The @skip rule would then consume
+//      both the space and the newline together, so the block separator
+//      would never be produced and the next statement would fail to parse.
+//      To handle this, the tokenizer first skips any trailing spaces/tabs
+//      and then looks for the newline character(s).
 
 export const newline = new ExternalTokenizer(
   (input, stack) => {
     let offset = 0;
+    // Skip trailing horizontal whitespace (spaces and tabs).
+    let c = input.peek(offset);
+    while (c === 0x20 /* space */ || c === 0x09 /* tab */) {
+      c = input.peek(++offset);
+    }
+    // Consume one or more newline characters.
+    const nlStart = offset;
     while (input.peek(offset) === CHAR_NEWLINE) {
       offset += 1;
     }
-    if (offset >= 1 && stack.canShift(terms.newline)) {
+    // Only produce the token if we found at least one newline and the
+    // current parser state accepts it as a statement separator.
+    if (offset > nlStart && stack.canShift(terms.newline)) {
       input.acceptToken(terms.newline, offset);
       return;
     }

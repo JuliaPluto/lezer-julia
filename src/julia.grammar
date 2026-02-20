@@ -114,7 +114,7 @@ simple-statement {
 
 Condition { expr _t? }
 ElseIfClause { kw<'elseif'> Condition block? }
-CatchClause  { kw<'catch'> ExceptionCapture { !simple Identifier }? block? }
+CatchClause  { kw<'catch'> ExceptionCapture[@dynamicPrecedence=1] { !simple Identifier }? _t? block? }
 ElseClause   { kw<'else'> block? }
 FinallyClause{ kw<'finally'> block? }
 
