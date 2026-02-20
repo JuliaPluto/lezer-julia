@@ -21,4 +21,4 @@ clean: # Remove generated files
 
 release:
 	npm publish
-	git tag v$(cat package.json | jq -r .version)
+	git tag v$(shell cat package.json | jq -r .version)
