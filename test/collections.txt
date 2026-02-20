@@ -201,6 +201,50 @@ Program(
 )
 
 
+# Comprehension arrays with compound-statement bodies
+
+[
+  try catch end
+  for i in 1:10
+]
+[
+  let
+    1 + 1
+  end
+  for i in 1:10
+]
+[if true; x end for x in xs]
+[while false; nothing end for x in xs]
+
+==>
+Program(
+  ComprehensionExpression(
+    Generator(
+      TryStatement(try, CatchClause(catch), end),
+      GenFor(for, ForBinding(Identifier, AssignmentOp(in), BinaryExpression(IntegerLiteral, Colon, IntegerLiteral))),
+    )
+  ),
+  ComprehensionExpression(
+    Generator(
+      LetStatement(let, BinaryExpression(IntegerLiteral, UnaryPlusOp, IntegerLiteral), end),
+      GenFor(for, ForBinding(Identifier, AssignmentOp(in), BinaryExpression(IntegerLiteral, Colon, IntegerLiteral))),
+    )
+  ),
+  ComprehensionExpression(
+    Generator(
+      IfStatement(if, Condition(BoolLiteral), Identifier, end),
+      GenFor(for, ForBinding(Identifier, AssignmentOp(in), Identifier)),
+    )
+  ),
+  ComprehensionExpression(
+    Generator(
+      WhileStatement(while, Condition(BoolLiteral), Identifier, end),
+      GenFor(for, ForBinding(Identifier, AssignmentOp(in), Identifier)),
+    )
+  ),
+)
+
+
 # Generator expressions
 
 (b(c, e) for c in d if e)

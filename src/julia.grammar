@@ -210,10 +210,22 @@ GenFilter { kw<'if'> expr }
 Generator<expr> { expr !simple GenFor GenFilter* }
 ArrayGenerator[@name=Generator]<expr> { expr ~gen-or-mat _t? !simple GenFor GenFilter* }
 
+// TODO: This isn't great, it's a copy of compound-statement but without the `begin` block because it produces a conflict with the `kw<begin>` index.
+BlockBodyGenerator[@name=Generator] {
+  ( QuoteStatement { kw<'quote'> block? end }
+  | WhileStatement { kw<'while'> Condition block? end }
+  | ForStatement { kw<'for'> sep1<',', ForBinding> _t? block? end }
+  | LetStatement { kw<'let'> sep1<',', LetBinding { binding<'Assignment'> | Identifier }>? (_t block? end | end) }
+  | IfStatement { kw<'if'> Condition block? ElseIfClause* ElseClause? end }
+  | TryStatement { kw<'try'> block? (CatchClause ElseClause?)? FinallyClause? end }
+  )
+  _t? !simple GenFor GenFilter*
+}
+
 MatrixRow { (expr-idx ~gen-or-mat)+ }
 
 array {
-  ( ComprehensionExpression { '[' ArrayGenerator<expr-idx> ']' }
+  ( ComprehensionExpression { '[' (ArrayGenerator<expr-idx> | BlockBodyGenerator) ']' }
   | MatrixExpression { '[' MatrixRow (_t MatrixRow)* _t? ']' }
   | VectorExpression { '[' sep<',', (!vec (expr-idx | binding-idx<'Assignment'>))> ']' }
   )
