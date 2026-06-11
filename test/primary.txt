@@ -139,6 +139,42 @@ Program(
 )
 
 
+# Keywords as identifiers - begin/end indexing nested in larger expressions - issue #15
+
+data[max(begin, i - 1)]
+data[min(end, i + 1)]
+x[(begin)]
+x[f(a = end)]
+x[(() -> begin)()]
+
+==>
+Program(
+  IndexExpression(Identifier, VectorExpression(CallExpression(Identifier, Arguments(begin, BinaryExpression(Identifier, UnaryPlusOp, IntegerLiteral))))),
+  IndexExpression(Identifier, VectorExpression(CallExpression(Identifier, Arguments(end, BinaryExpression(Identifier, UnaryPlusOp, IntegerLiteral))))),
+  IndexExpression(Identifier, VectorExpression(ParenExpression(begin))),
+  IndexExpression(Identifier, VectorExpression(CallExpression(Identifier, Arguments(KwArg(Identifier, AssignmentOp, end))))),
+  IndexExpression(Identifier, VectorExpression(CallExpression(ParenExpression(ArrowFunctionExpression(TupleExpression, begin)), Arguments))),
+)
+
+
+# Compound statements inside index brackets
+
+x[let
+  2
+end]
+x[if a
+  1
+else
+  2
+end]
+
+==>
+Program(
+  IndexExpression(Identifier, VectorExpression(LetStatement(let, IntegerLiteral, end))),
+  IndexExpression(Identifier, VectorExpression(IfStatement(if, Condition(Identifier), IntegerLiteral, ElseClause(else, IntegerLiteral), end))),
+)
+
+
 # Type parametrized expressions
 
 Vector{Int}

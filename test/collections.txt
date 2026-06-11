@@ -215,6 +215,10 @@ Program(
 ]
 [if true; x end for x in xs]
 [while false; nothing end for x in xs]
+[begin
+  a = 1
+  a
+end for i in xs]
 
 ==>
 Program(
@@ -242,6 +246,26 @@ Program(
       GenFor(for, ForBinding(Identifier, AssignmentOp(in), Identifier)),
     )
   ),
+  ComprehensionExpression(
+    Generator(
+      BeginStatement(begin, Assignment(Identifier, AssignmentOp, IntegerLiteral), Identifier, end),
+      GenFor(for, ForBinding(Identifier, AssignmentOp(in), Identifier)),
+    )
+  ),
+)
+
+
+# Matrix rows of tilde bindings
+
+eqs = [D(x) ~ a * x
+       D(y) ~ b * y]
+
+==>
+Program(
+  Assignment(Identifier, AssignmentOp, MatrixExpression(
+    MatrixRow(Assignment(CallExpression(Identifier, Arguments(Identifier)), TildeOp, BinaryExpression(Identifier, TimesOp, Identifier))),
+    MatrixRow(Assignment(CallExpression(Identifier, Arguments(Identifier)), TildeOp, BinaryExpression(Identifier, TimesOp, Identifier))),
+  ))
 )
 
 

@@ -260,7 +260,11 @@ export const newline = new ExternalTokenizer(
       input.acceptToken(terms.newline, offset);
       return;
     }
-  }
+  },
+  // The result depends on the parse stack (canShift), so it must not be
+  // cached across GLR branches: another branch at the same position may
+  // not accept a newline here.
+  { contextual: true },
 );
 
 // LAYOUT TOKENIZERS
@@ -276,6 +280,28 @@ const isWhitespace = (c) =>
   (c >= 8239 && c < 8240) ||
   (c >= 8287 && c < 8288) ||
   (c >= 12288 && c < 12289);
+
+// Zero-length token marking whitespace between elements of a matrix row
+// (`[a (b)]`). Only produced when the preceding whitespace contains no
+// newline: a newline separates matrix rows, not row elements. Without
+// preceding whitespace no token is produced, so `f(x)` inside brackets can
+// only be parsed as a call.
+export const spaceSep = new ExternalTokenizer(
+  (input, stack) => {
+    let offset = -1;
+    let c = input.peek(offset);
+    if (!isWhitespace(c)) return;
+    while (isWhitespace(c)) {
+      if (c === CHAR_NEWLINE) return;
+      c = input.peek(--offset);
+    }
+    if (stack.canShift(terms.spaceSep)) {
+      input.acceptToken(terms.spaceSep, 0);
+    }
+  },
+  // contextual: the canShift result differs between GLR branches.
+  { extend: true, contextual: true },
+);
 
 export const immediate = new ExternalTokenizer(
   (input, stack) => {
