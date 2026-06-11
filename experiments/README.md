@@ -43,3 +43,10 @@ node experiments/find-regression.js path/to/file.jl
 # Compare parse speed:
 node experiments/perf.mjs /tmp/julia-corpus-big.txt
 ```
+
+## diff-vs-main.mjs
+
+Same as diff-corpus.js, but compares against a standalone build of the
+grammar at HEAD instead of the published package — useful for isolating the
+effect of uncommitted changes when main itself is ahead of the last release.
+Setup instructions are in the header comment of the script.

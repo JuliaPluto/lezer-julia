@@ -274,6 +274,32 @@ Program(
 )
 
 
+# Typed comprehensions - issue #45
+
+Float64[i for i in 1:3]
+T[i + j for i in 1:3, j in 1:3]
+
+==>
+Program(
+  IndexExpression(Identifier, ComprehensionExpression(
+    Generator(
+      Identifier,
+      GenFor(for, ForBinding(Identifier, AssignmentOp(in), BinaryExpression(IntegerLiteral, Colon, IntegerLiteral))),
+    )
+  )),
+  IndexExpression(Identifier, ComprehensionExpression(
+    Generator(
+      BinaryExpression(Identifier, UnaryPlusOp, Identifier),
+      GenFor(
+        for,
+        ForBinding(Identifier, AssignmentOp(in), BinaryExpression(IntegerLiteral, Colon, IntegerLiteral)),
+        ForBinding(Identifier, AssignmentOp(in), BinaryExpression(IntegerLiteral, Colon, IntegerLiteral)),
+      ),
+    )
+  )),
+)
+
+
 # Matrix rows of tilde bindings
 
 eqs = [D(x) ~ a * x

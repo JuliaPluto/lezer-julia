@@ -272,3 +272,45 @@ Program(
     BinaryExpression(Identifier, UnaryPlusOp, Identifier),
   )
 )
+
+
+# Open macro calls terminated by a generator `for` - issue #24
+
+[@show (index) for index in eachindex(r_v)]
+[@__FILE__ for index in eachindex(r_v)]
+sum(@show x for x in y)
+f(@m x for i in y end)
+
+==>
+Program(
+  ComprehensionExpression(
+    Generator(
+      MacrocallExpression(MacroIdentifier(Identifier), MacroArguments(ParenExpression(Identifier))),
+      GenFor(for, ForBinding(Identifier, AssignmentOp(in), CallExpression(Identifier, Arguments(Identifier)))),
+    )
+  ),
+  ComprehensionExpression(
+    Generator(
+      MacrocallExpression(MacroIdentifier(Identifier)),
+      GenFor(for, ForBinding(Identifier, AssignmentOp(in), CallExpression(Identifier, Arguments(Identifier)))),
+    )
+  ),
+  CallExpression(
+    Identifier,
+    Arguments(
+      Generator(
+        MacrocallExpression(MacroIdentifier(Identifier), MacroArguments(Identifier)),
+        GenFor(for, ForBinding(Identifier, AssignmentOp(in), Identifier)),
+      )
+    )
+  ),
+  CallExpression(
+    Identifier,
+    Arguments(
+      MacrocallExpression(
+        MacroIdentifier(Identifier),
+        MacroArguments(Identifier, ForStatement(for, ForBinding(Identifier, AssignmentOp(in), Identifier), end)),
+      )
+    )
+  ),
+)

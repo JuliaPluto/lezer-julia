@@ -139,6 +139,20 @@ Program(
 )
 
 
+# Keywords as identifiers - begin/end indexing with range operators
+
+xs[begin:end]
+xs[begin..end]
+data[begin:2:end]
+
+==>
+Program(
+  IndexExpression(Identifier, VectorExpression(BinaryExpression(begin, Colon, end))),
+  IndexExpression(Identifier, VectorExpression(BinaryExpression(begin, EllipsisOp, end))),
+  IndexExpression(Identifier, VectorExpression(BinaryExpression(BinaryExpression(begin, Colon, IntegerLiteral), Colon, end))),
+)
+
+
 # Keywords as identifiers - begin/end indexing nested in larger expressions - issue #15
 
 data[max(begin, i - 1)]

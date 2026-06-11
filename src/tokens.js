@@ -267,6 +267,83 @@ export const newline = new ExternalTokenizer(
   { contextual: true },
 );
 
+// GENERATOR `for`
+//
+// Inside a tuple/call/paren or bracket, a `for` following open macro-call
+// arguments is ambiguous: it can start another space-separated macro
+// argument (`f(@m x for i in y end)`, a for-loop) or it can be the `for` of
+// a generator, which terminates the macro call (`sum(@show x for x in y)`,
+// matching Julia). Producing a distinct token for the generator `for`
+// (extend: true, so it coexists with the regular keyword token) lets GLR
+// explore both readings; the for-loop reading dies when no `end` follows.
+
+const CHAR_f = "f".codePointAt(0);
+const CHAR_o = "o".codePointAt(0);
+const CHAR_r = "r".codePointAt(0);
+
+const isIdentifierContinueChar = (input, offset) => {
+  const c = input.peek(offset);
+  return (
+    (c >= CHAR_0 && c <= CHAR_9) ||
+    c === CHAR_UNDERSCORE ||
+    c === CHAR_EXCLAMATION ||
+    isIdentifierStartChar(input, offset) !== 0
+  );
+};
+
+export const genFor = new ExternalTokenizer(
+  (input, stack) => {
+    if (
+      input.peek(0) === CHAR_f &&
+      input.peek(1) === CHAR_o &&
+      input.peek(2) === CHAR_r &&
+      !isIdentifierContinueChar(input, 3) &&
+      stack.canShift(terms.genFor)
+    ) {
+      input.acceptToken(terms.genFor, 3);
+    }
+  },
+  // canShift ⇒ contextual (don't cache across GLR branches); extend so the
+  // regular `for` keyword token can coexist in the other branch.
+  { extend: true, contextual: true },
+);
+
+// NUMBERS BEFORE `..`
+//
+// The built-in FloatLiteral token allows a trailing dot (`1.`), so `1..2`
+// would lex as `1.` `.2`. Julia's lexer backs off the trailing dot when it
+// is followed by another dot, so `1..2` is `1 .. 2` (a range). This
+// tokenizer produces an IntegerLiteral for decimal digits that are
+// immediately followed by two dots; it is listed before the built-in
+// tokenizer, so it takes priority over FloatLiteral in exactly this case.
+
+export const intBeforeRange = new ExternalTokenizer((input, _stack) => {
+  let offset = 0;
+  let c = input.peek(offset);
+  if (c < CHAR_0 || c > CHAR_9) return;
+  while (true) {
+    c = input.peek(++offset);
+    if (c >= CHAR_0 && c <= CHAR_9) continue;
+    if (c === CHAR_UNDERSCORE) {
+      // An underscore must be followed by another digit to stay inside the
+      // numeral (`1_000`); otherwise the numeral ended before it (`12_`).
+      const next = input.peek(offset + 1);
+      if (next >= CHAR_0 && next <= CHAR_9) {
+        offset += 1;
+        continue;
+      }
+    }
+    break;
+  }
+  if (c !== CHAR_DOT) return;
+  // Hex/octal/binary literals (`0x1`) never end in a bare trailing dot, and
+  // exponents (`1e3`) consume their digits, so plain decimal digits are the
+  // only case that needs the back-off.
+  if (input.peek(offset + 1) === CHAR_DOT) {
+    input.acceptToken(terms.trailingInt, offset);
+  }
+});
+
 // LAYOUT TOKENIZERS
 
 const isWhitespace = (c) =>

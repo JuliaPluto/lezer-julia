@@ -470,12 +470,28 @@ import Module: ==, +
 Program(
   UsingStatement(using, ImportPath(Identifier)),
   UsingStatement(using, ImportPath(Identifier), ImportPath(Identifier), ImportPath(Identifier)),
-  UsingStatement(using, ImportPath(Identifier), ImportPath(Identifier), ),
+  UsingStatement(using, ImportPath(EllipsisOp, Identifier), ImportPath(EllipsisOp, Identifier), ),
 
   ImportStatement(import, ImportPath(Identifier, Identifier)),
   UsingStatement(using, SelectedImport(ImportPath(Identifier), ImportPath(Identifier), ImportPath(Identifier))),
   ImportStatement(import, SelectedImport(ImportPath(Identifier), MacroIdentifier(Identifier))),
   ImportStatement(import, SelectedImport(ImportPath(Identifier), Operator(ComparisonOp), Operator(UnaryPlusOp)))
+)
+
+
+# Import statements - relative import dots and the `..` operator - issue #30
+
+import ...A
+import ....A.b
+using Intervals: ..
+import Base: .. as dd
+
+==>
+Program(
+  ImportStatement(import, ImportPath(Identifier)),
+  ImportStatement(import, ImportPath(Identifier, Identifier)),
+  UsingStatement(using, SelectedImport(ImportPath(Identifier), Operator(EllipsisOp))),
+  ImportStatement(import, SelectedImport(ImportPath(Identifier), ImportAlias(Operator(EllipsisOp), as, Identifier))),
 )
 
 

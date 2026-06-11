@@ -72,9 +72,13 @@ expression<e> {
   | TernaryExpression<e>
   | Operator
   | FloatLiteral
-  | IntegerLiteral
+  | integer
   )
 }
+
+// `1..2` lexes the `1` with the external trailingInt token (the built-in
+// FloatLiteral would otherwise swallow the first dot as `1.`).
+integer { IntegerLiteral | trailingInt }
 
 // Expression in "normal" context
 expr { expression<expr> | simple-statement | compound-statement | definition }
@@ -96,7 +100,9 @@ kwid[@dynamicPrecedence=1]<term> { @extend[@name={term},group='keyword']<Identif
 
 end { kw<'end'> }
 
-ImportPath { ('.'+ immediateIdentifier)? Identifier (!dot immediateDot '.' Identifier)* }
+// Leading dots of a relative import lex as `.`, `..` or `...` (maximal
+// munch, now that `..` is a token): `import ...A` is `...` `.A`.
+ImportPath { (('.' | EllipsisOp ~impdots | '...')+ immediateIdentifier)? Identifier (!dot immediateDot '.' Identifier)* }
 ImportAlias { importable kwid<'as'> exportable }
 
 exportable { Identifier | MacroIdentifier | Operator | parens<exportable> }
@@ -151,7 +157,11 @@ compound-statement[@isGroup=CompoundStatement] {
 // `begin`-as-index via GLR: `x[begin]` resolves to the index, while
 // `[begin f(x) end for i in xs]` resolves to a block body.
 compound-statement-idx[@isGroup=CompoundStatement] {
-  ( BeginStatement { kw<'begin'> ~bgn newline? block? end }
+  // The negative dynamic precedence breaks errorless GLR ties like
+  // `x[begin:end]` (a begin-block whose body is the bare operator `:`, vs
+  // the far more likely first-index:last-index reading) toward the index
+  // reading. Real begin-blocks in brackets win on error count, not ties.
+  ( BeginStatement[@dynamicPrecedence=-1] { kw<'begin'> ~bgn newline? block? end }
   | QuoteStatement { kw<'quote'> newline? block? end }
   | WhileStatement { kw<'while'> Condition block? end }
   | ForStatement { kw<'for'> sep1<',', ForBinding> _t? block? end }
@@ -237,7 +247,10 @@ TupleExpression<e> { tuple<e> }
 
 // NOTE: binding `in` is a keyword, membership `in` is a function
 ForBinding { kwid<'outer'>? (Identifier | TupleExpression<expr>) !assignment AssignmentOp { '=' | '∈' | kwid<'in'> } expr }
-GenFor { kw<'for'> sep1<(!tup ','), ForBinding> (kw<'for'> sep1<(!tup ','), ForBinding>)* }
+// The generator `for` is a distinct (external) token so that it can
+// GLR-fork against a for-loop reading of the same word, e.g. after open
+// macro-call arguments: `sum(@show x for x in y)`.
+GenFor { genFor sep1<(!tup ','), ForBinding> (genFor sep1<(!tup ','), ForBinding>)* }
 GenFilter { kw<'if'> expr }
 Generator<e> { e !simple GenFor GenFilter* }
 ArrayGenerator[@name=Generator]<e> { e ~gen-or-mat _t? !simple GenFor GenFilter* }
@@ -376,7 +389,9 @@ Operator {
   | RationalOp
   | TimesOp
   | PlusOp
-  | EllipsisOp
+  // ~impdots: `..` in import position GLR-forks between an importable
+  // operator (`import Base: ..`) and relative-import dots (`import ..A`).
+  | EllipsisOp ~impdots
   | Dollar { '$' }
   | Colon { ':' }
   | PipeRightOp
@@ -453,6 +468,8 @@ string {
   immediateIdentifier
 }
 @external tokens spaceSep from "./tokens.js" { spaceSep }
+@external tokens intBeforeRange from "./tokens.js" { trailingInt[@name=IntegerLiteral] }
+@external tokens genFor from "./tokens.js" { genFor[@name=for] }
 @external tokens word from "./tokens.js" { word }
 @external tokens Identifier from "./tokens.js" { Identifier }
 
@@ -479,7 +496,7 @@ _t { newline | semicolon }
   RationalOp { op<'//'> }
   TimesOp { op<$[*/%&\\] | $[⌿÷··⋅∘×∩∧⊗⊘⊙⊚⊛⊠⊡⊓∗∙∤⅋≀⊼⋄⋆⋇⋉⋊⋋⋌⋏⋒⟑⦸⦼⦾⦿⧶⧷⨇⨰⨱⨲⨳⨴⨵⨶⨷⨸⨻⨼⨽⩀⩃⩄⩋⩍⩎⩑⩓⩕⩘⩚⩜⩞⩟⩠⫛⊍▷⨝⟕⟖⟗⨟]> }
   PlusOp { op<'++' | '|' | $[−¦⊕⊖⊞⊟∪∨⊔∔∸≏⊎⊻⊽⋎⋓⟇⧺⧻⨈⨢⨣⨤⨥⨦⨧⨨⨩⨪⨫⨬⨭⨮⨹⨺⩁⩂⩅⩊⩌⩏⩐⩒⩔⩖⩗⩛⩝⩡⩢⩣]> }
-  EllipsisOp { op<$[…⁝⋮⋱⋰⋯]> } // TODO: `..` conflicts with ImportPath
+  EllipsisOp { op<$[…⁝⋮⋱⋰⋯]> | '..' } // `..` has the same precedence as `:` in Julia
   PipeRightOp { op<'|>'> }
   PipeLeftOp { op<'<|'> }
   ComparisonOp { op<'>=' | '<=' | '==' | '===' | '!=' | '!==' | $[><] | $[≥≤≡≠≢∈∉∋∌⊆⊈⊂⊄⊊∝∊∍∥∦∷∺∻∽∾≁≃≂≄≅≆≇≈≉≊≋≌≍≎≐≑≒≓≖≗≘≙≚≛≜≝≞≟≣≦≧≨≩≪≫≬≭≮≯≰≱≲≳≴≵≶≷≸≹≺≻≼≽≾≿⊀⊁⊃⊅⊇⊉⊋⊏⊐⊑⊒⊜⊩⊬⊮⊰⊱⊲⊳⊴⊵⊶⊷⋍⋐⋑⋕⋖⋗⋘⋙⋚⋛⋜⋝⋞⋟⋠⋡⋢⋣⋤⋥⋦⋧⋨⋩⋪⋫⋬⋭⋲⋳⋴⋵⋶⋷⋸⋹⋺⋻⋼⋽⋾⋿⟈⟉⟒⦷⧀⧁⧡⧣⧤⧥⩦⩧⩪⩫⩬⩭⩮⩯⩰⩱⩲⩳⩵⩶⩷⩸⩹⩺⩻⩼⩽⩾⩿⪀⪁⪂⪃⪄⪅⪆⪇⪈⪉⪊⪋⪌⪍⪎⪏⪐⪑⪒⪓⪔⪕⪖⪗⪘⪙⪚⪛⪜⪝⪞⪟⪠⪡⪢⪣⪤⪥⪦⪧⪨⪩⪪⪫⪬⪭⪮⪯⪰⪱⪲⪳⪴⪵⪶⪷⪸⪹⪺⪻⪼⪽⪾⪿⫀⫁⫂⫃⫄⫅⫆⫇⫈⫉⫊⫋⫌⫍⫎⫏⫐⫑⫒⫓⫔⫕⫖⫗⫘⫙⫷⫸⫹⫺⊢⊣⟂⫪⫫]> }
