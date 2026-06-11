@@ -2,3 +2,4 @@
 /dist/
 package-lock.json
 memory/MEMORY.md
+/tmp-main-build/

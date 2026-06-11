@@ -49,6 +49,20 @@ Issue threads + JuliaSyntax behavior knowledge are faster oracles.
   `spaceSep` (whitespace containing no newline). This is what makes `[f(x)]`
   a call instead of the juxtaposition `f`,`(x)`. `MatrixRow` carries
   `@dynamicPrecedence=-1` purely to break GLR ties toward non-matrix readings.
+- The generator `for` is its own external token (`genFor`, `extend: true` +
+  `canShift`), distinct from the `for` keyword. This is what lets
+  `sum(@show x for x in y)` fork: one branch shifts `genFor` (macro args end,
+  generator starts, matching Julia's `for_generator` rule), the other shifts
+  keyword `for` (a for-loop as the next macro argument, `f(@m x for i in y
+  end)`); the loser dies on error. A grammar-level fix is impossible — see
+  the conflict-marker gotcha below.
+- `..` lexes via the external `trailingInt` token: built-in `FloatLiteral`
+  accepts a trailing dot, so `1..2` would otherwise lex as `1.` `.2`.
+  External tokenizers run before `@tokens`, so `trailingInt` (decimal digits
+  immediately followed by two dots) wins there and only there. Leading dots
+  of relative imports (`import ..A`, `...A`) lex as `..`/`...` by maximal
+  munch; `ImportPath` accepts them, with `~impdots` forking against
+  `import Base: ..` (operator importable).
 
 ## Hard-won gotchas
 
@@ -73,6 +87,24 @@ Issue threads + JuliaSyntax behavior knowledge are faster oracles.
   and context-dependently** — the same snippet can parse differently
   depending on *following* lines. If a corpus file changes tree without
   changing error count, suspect a tie and break it deterministically.
+  The corpus also can't clear you of tie bugs it never exercises:
+  `x[begin:end]` misparsed as a begin-block with a bare-`Operator` body
+  (`:` is a valid expression!) and no corpus file contained it. Pluto cells
+  are short snippets, so snippet-level parses are what matter. Fixed with
+  `@dynamicPrecedence=-1` on the idx `BeginStatement`; the whole class is
+  `x[begin <op> end]` for any standalone-operator `<op>`.
+- **Precedence beats `~markers` in lezer-generator** (`addActionInner`):
+  a conflict already resolved by `!prec` ignores ambiguity markers
+  silently. Equalizing precedence on both sides activates the marker, but
+  for *every* lookahead token at that boundary, not just the one you care
+  about — for macro-args-vs-generator this exploded the table ("Goto table
+  too large"). When you need a fork on one specific token, give that token
+  its own contextual external tokenizer (`extend: true`) instead — that's
+  why `genFor` exists; same family of trick as `spaceSep`.
+- JuliaSyntax's `ParseState` flags are the oracle for context rules:
+  `for_generator=true` (set in `parse_call_arglist`) is why `for`
+  terminates open macro arguments inside any call/bracket/paren, while
+  `@simd for ... end` at statement level keeps the loop as an argument.
 - Token selection is parse-state-dependent: `'''` as CharLiteral and `x'''`
   as triple adjoint coexist without conflict because the CharLiteral token
   isn't valid in post-expression states.
