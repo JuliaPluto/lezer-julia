@@ -255,6 +255,25 @@ Program(
 )
 
 
+# Comprehension arrays with begin block bodies - issue #44
+
+[
+	begin
+		1 + i
+	end for i in 1:10
+]
+
+==>
+Program(
+  ComprehensionExpression(
+    Generator(
+      BeginStatement(begin, BinaryExpression(IntegerLiteral, UnaryPlusOp, Identifier), end),
+      GenFor(for, ForBinding(Identifier, AssignmentOp(in), BinaryExpression(IntegerLiteral, Colon, IntegerLiteral))),
+    )
+  ),
+)
+
+
 # Matrix rows of tilde bindings
 
 eqs = [D(x) ~ a * x
