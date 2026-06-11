@@ -27,5 +27,5 @@ clean: # Remove generated files
 	rm -f $(INDEX)
 
 release:
-	$(NPM) publish
-	git tag v$(cat package.json | jq -r .version)
+	npm publish
+	git tag v$(shell cat package.json | jq -r .version)

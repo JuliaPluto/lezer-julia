@@ -9,12 +9,14 @@
 
 ==>
 Program(
-  UnaryExpression(UnaryPlusOp, Identifier),
-  UnaryExpression(UnaryPlusOp, Identifier),
-  UnaryExpression(UnaryOp, IntegerLiteral),
-  UnaryExpression(UnaryPlusOp, AdjointExpression(Identifier), LineComment),
-  BinaryExpression(UnaryExpression(UnaryOp, Identifier), ComparisonOp, UnaryExpression(UnaryOp, ParenExpression(Identifier))), LineComment,
-  BinaryExpression(IntegerLiteral, PlusOp, UnaryExpression(UnaryPlusOp, IntegerLiteral)),
+  UnaryExpression(UnaryPlusOp,Identifier),
+  UnaryExpression(UnaryPlusOp,Identifier),
+  UnaryExpression(UnaryOp,IntegerLiteral),
+  UnaryExpression(UnaryPlusOp,AdjointExpression(Identifier)),
+  LineComment,
+  BinaryExpression(UnaryExpression(UnaryOp,Identifier),ComparisonOp,UnaryExpression(UnaryOp,ParenExpression("(",Identifier,")"))),
+  LineComment,
+  BinaryExpression(IntegerLiteral,PlusOp,UnaryExpression(UnaryPlusOp,IntegerLiteral)),
 )
 
 
@@ -29,12 +31,14 @@ A \ (v × w)
 
 ==>
 Program(
-  BinaryExpression(Identifier, PowerOp, IntegerLiteral),
-  UnaryExpression(UnaryPlusOp, BinaryExpression(Identifier, PowerOp, IntegerLiteral, LineComment)),
-  BinaryExpression(Identifier, RationalOp, Identifier),
-  BinaryExpression(Identifier, UnaryPlusOp, Identifier),
-  BinaryExpression(Identifier, PlusOp, BinaryExpression(IntegerLiteral, TimesOp, BinaryExpression(Identifier, PowerOp, IntegerLiteral))), LineComment,
-  BinaryExpression(Identifier, TimesOp, ParenExpression(BinaryExpression(Identifier, TimesOp, Identifier))),
+  BinaryExpression(Identifier,PowerOp,IntegerLiteral),
+  UnaryExpression(UnaryPlusOp,BinaryExpression(Identifier,PowerOp,IntegerLiteral)),
+  LineComment,
+  BinaryExpression(Identifier,RationalOp,Identifier),
+  BinaryExpression(Identifier,UnaryPlusOp,Identifier),
+  BinaryExpression(Identifier,PlusOp,BinaryExpression(IntegerLiteral,TimesOp,BinaryExpression(Identifier,PowerOp,IntegerLiteral))),
+  LineComment,
+  BinaryExpression(Identifier,TimesOp,ParenExpression("(",BinaryExpression(Identifier,TimesOp,Identifier),")")),
 )
 
 

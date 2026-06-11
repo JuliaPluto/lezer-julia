@@ -2,9 +2,9 @@
   quote @left
   dot @left
   where @left // Inner `where`
-  decl @left
   power @right
   unary @right
+  decl @left
   juxt @right
   bitshift @left
   rational @left
@@ -41,30 +41,35 @@ OpenTuple { expr (!tup ',' expr)+ }
 
 // Assignments inside blocks, including top-level.
 OpenAssignment[@name=Assignment] {
-  (primary-expr | operation<expr> | Operator | OpenTuple)
+  (primary-expr<expr> | operation<expr> | Operator | OpenTuple)
   !assignment (AssignmentOp | UpdateOp | TildeOp) !assignment
   top-level
 }
 
 // Assignments inside brackets cannot contain OpenTuples.
-_binding<alias, expr> {
+_binding<alias, e> {
   [@name={alias}] {
-      (primary-expr | operation<expr> | Operator)
+      (primary-expr<e> | operation<e> | Operator)
       !assignment (AssignmentOp | UpdateOp | TildeOp) !assignment
-      (expr | _binding<'Assignment', expr>)
+      (e | _binding<'Assignment', e>)
   }
 }
 binding<alias> { _binding<alias, expr> }
 binding-idx<alias> { _binding<alias, expr-idx> }
 
 // Almost everything else is an expression.
-expression<expr> {
-  ( primary-expr
-  | operation<expr>
-  | OpenMacrocallExpression
-  | ArrowFunctionExpression
-  | JuxtapositionExpression
-  | TernaryExpression<expr>
+// The parameter `e` distinguishes the "normal" context (expr) from the
+// index context (expr-idx) inside square brackets, where `begin` and `end`
+// are valid values at any expression depth (issue #15). The parameter is
+// threaded through every construct that can nest expressions without
+// starting a new block scope.
+expression<e> {
+  ( primary-expr<e>
+  | operation<e>
+  | OpenMacrocallExpression<e>
+  | ArrowFunctionExpression<e>
+  | JuxtapositionExpression<e>
+  | TernaryExpression<e>
   | Operator
   | FloatLiteral
   | IntegerLiteral
@@ -74,8 +79,13 @@ expression<expr> {
 // Expression in "normal" context
 expr { expression<expr> | simple-statement | compound-statement | definition }
 
-// Expressions inside arrays
-expr-idx { expression<expr-idx> | kw<'begin'> | kw<'end'> }
+// Type expressions (just an alias for expr, but creates a named node)
+Type { !decl expr }
+
+// Expressions inside arrays. `begin` and `end` are valid index values, and
+// compound statements are allowed (their bodies are normal blocks again),
+// except `begin` blocks: inside brackets `begin` always means the first index.
+expr-idx { expression<expr-idx> | kw<'begin'> ~bgn | kw<'end'> | compound-statement-idx }
 
 
 // STATEMENTS
@@ -111,43 +121,68 @@ simple-statement {
 
 Condition { expr _t? }
 ElseIfClause { kw<'elseif'> Condition block? }
-CatchClause  { kw<'catch'> ExceptionCapture { !simple Identifier }? block? }
-ElseClause   { kw<'else'> block? }
-FinallyClause{ kw<'finally'> block? }
+CatchClause  { kw<'catch'> ExceptionCapture[@dynamicPrecedence=1] { !simple Identifier }? _t? block? }
+ElseClause   { kw<'else'> newline? block? }
+FinallyClause{ kw<'finally'> newline? block? }
 
+// The explicit `newline?` after block-opening keywords lets the newline be
+// shifted as a token. Inside brackets this is essential: the newline after
+// `[begin` is also a possible matrix row separator, and both GLR branches
+// must be able to consume the same token to stay alive. (`_t?` would also
+// pull in the `semicolon` token, which overlaps with the `';'` separator
+// used by parenthesized expressions.)
 compound-statement[@isGroup=CompoundStatement] {
-  ( BeginStatement { kw<'begin'> block? end }
-  | QuoteStatement { kw<'quote'> block? end }
+  ( BeginStatement { kw<'begin'> newline? block? end }
+  | QuoteStatement { kw<'quote'> newline? block? end }
   | WhileStatement { kw<'while'> Condition block? end }
   | ForStatement { kw<'for'> sep1<',', ForBinding> _t? block? end }
-  | LetStatement { kw<'let'> sep1<',', LetBinding { binding<'Assignment'> | Identifier }>? _t block? end }
+  | LetStatement { kw<'let'> sep1<',', LetBinding { binding<'Assignment'> | Identifier }>? (_t block? end | end) }
   | IfStatement {
       kw<'if'> Condition block? ElseIfClause* ElseClause? end
     }
   | TryStatement {
-      kw<'try'> block? (CatchClause ElseClause?)? FinallyClause? end
+      kw<'try'> newline? block? (CatchClause ElseClause?)? FinallyClause? end
     }
   )
 }
 
-TypeHead { primary-expr | BinaryExpression<expr> }
+// Same as compound-statement, for use inside brackets where `begin` and
+// `end` can also be index values. `begin ... end` blocks fork with
+// `begin`-as-index via GLR: `x[begin]` resolves to the index, while
+// `[begin f(x) end for i in xs]` resolves to a block body.
+compound-statement-idx[@isGroup=CompoundStatement] {
+  ( BeginStatement { kw<'begin'> ~bgn newline? block? end }
+  | QuoteStatement { kw<'quote'> newline? block? end }
+  | WhileStatement { kw<'while'> Condition block? end }
+  | ForStatement { kw<'for'> sep1<',', ForBinding> _t? block? end }
+  | LetStatement { kw<'let'> sep1<',', LetBinding { binding<'Assignment'> | Identifier }>? (_t block? end | end) }
+  | IfStatement {
+      kw<'if'> Condition block? ElseIfClause* ElseClause? end
+    }
+  | TryStatement {
+      kw<'try'> newline? block? (CatchClause ElseClause?)? FinallyClause? end
+    }
+  )
+}
+
+TypeHead { primary-expr<expr> | BinaryExpression<expr> }
 
 definition[@isGroup=Definition] {
   ( AbstractDefinition { kwid<'abstract'> kwid<'type'> TypeHead end }
   | PrimitiveDefinition { kwid<'primitive'> kwid<'type'> TypeHead IntegerLiteral end }
   | StructDefinition { kwid<'mutable'>? kw<'struct'> TypeHead (_t block?)? end } // TODO: Allow skipping terminator
   | ModuleDefinition { (kw<'module'> | kw<'baremodule'>) Identifier _t? block? end }
-  | MacroDefinition { 
+  | MacroDefinition {
       kw<'macro'>
       ( Signature { Identifier }
-      | Signature { CallExpression } _t? block?
+      | Signature { CallExpression<expr> } _t? block?
       )
       end
     }
   | FunctionDefinition {
       kw<'function'>
       ( Signature { Identifier }
-      | Signature { !simple (CallExpression | TupleExpression | BinaryExpression<expr>) } _t? block?
+      | Signature { !simple (CallExpression<expr> | TupleExpression<expr> | BinaryExpression<expr>) } _t? block?
       )
       end
     }
@@ -157,22 +192,22 @@ definition[@isGroup=Definition] {
 
 // PRIMARY EXPRESSIONS
 
-primary-expr {
+primary-expr<e> {
   ( Identifier
   | BoolLiteral { @specialize<Identifier, 'true' | 'false'> }
   | CharLiteral
   | Symbol
   | string
   | array
-  | BraceExpression
-  | ParenExpression
-  | TupleExpression
-  | AdjointExpression { primary-expr immediateQuote "'" }
-  | FieldExpression { primary-expr !dot immediateDot '.' Field { Symbol | QuoteExpression | string | Word } }
-  | IndexExpression { primary-expr immediateBracket array }
-  | ParametrizedExpression { primary-expr immediateBrace BraceExpression }
-  | CallExpression
-  | ClosedMacrocallExpression
+  | BraceExpression<e>
+  | ParenExpression<e>
+  | TupleExpression<e>
+  | AdjointExpression { primary-expr<e> immediateQuote "'" }
+  | FieldExpression { primary-expr<e> !dot immediateDot '.' Field { Symbol | QuoteExpression | string | Word } }
+  | IndexExpression { primary-expr<e> immediateBracket array }
+  | ParametrizedExpression { primary-expr<e> immediateBrace BraceExpression<e> }
+  | CallExpression<e>
+  | ClosedMacrocallExpression<e>
   | InterpExpression
   | QuoteExpression
   )
@@ -181,62 +216,76 @@ primary-expr {
 sep<delim, rule> { (rule (delim rule)* delim?)? }
 sep1<delim, rule> { rule (delim rule)* }
 
-BraceExpression { '{' sep<',', expr | binding<'Assignment'>> '}' }
-ParenExpression[@dynamicPrecedence=1] { '(' sep1<';', (expr | binding<'Assignment'> | Generator<expr>) ~tup-or-par> ')' }
+BraceExpression<e> { '{' sep<',', e | _binding<'Assignment', e>> '}' }
+ParenExpression[@dynamicPrecedence=1]<e> { '(' sep1<';', (e | _binding<'Assignment', e> | Generator<e>) ~tup-or-par> ')' }
 
 // Parentheses where multiple expressions are not allowed.
 parens[@name=ParenExpression]<x> { '(' x ')' }
 
-tuple {
+tuple<e> {
   '('
-  sep<',', expr | binding<'KwArg'> | Generator<expr>>
+  sep<',', e | _binding<'KwArg', e> | Generator<e>>
   ~tup-or-par
-  KeywordArguments { ';' sep<',', expr | binding<'KwArg'>> }?
+  KeywordArguments { ';' sep<',', e | _binding<'KwArg', e>> }?
   ')'
 }
 
 // Tuples and arguments are parsed the same, but used in different contexts.
-Arguments { tuple }
-TupleExpression { tuple }
+Arguments<e> { tuple<e> }
+TupleExpression<e> { tuple<e> }
 
 
 // NOTE: binding `in` is a keyword, membership `in` is a function
-ForBinding { kwid<'outer'>? (Identifier | TupleExpression) !assignment AssignmentOp { '=' | '∈' | kwid<'in'> } expr }
-GenFor { kw<'for'> sep1<(!tup ','), ForBinding> }
+ForBinding { kwid<'outer'>? (Identifier | TupleExpression<expr>) !assignment AssignmentOp { '=' | '∈' | kwid<'in'> } expr }
+GenFor { kw<'for'> sep1<(!tup ','), ForBinding> (kw<'for'> sep1<(!tup ','), ForBinding>)* }
 GenFilter { kw<'if'> expr }
-Generator<expr> { expr !simple GenFor (GenFor | GenFilter)* }
+Generator<e> { e !simple GenFor GenFilter* }
+ArrayGenerator[@name=Generator]<e> { e ~gen-or-mat _t? !simple GenFor GenFilter* }
 
-MatrixRow { (!mat expr-idx)+ }
+// Elements of a matrix row must be separated by whitespace (without a
+// newline, which separates rows instead). `spaceSep` is a zero-length token
+// that marks such whitespace. Requiring it here means `[f(x)]` is always a
+// call, never the juxtaposition of `f` and `(x)`, matching Julia.
+// Bindings are allowed as elements so that `[a ~ b\nc ~ d]` (common in
+// SciML code) parses as rows of `~` bindings.
+// The negative dynamic precedence breaks GLR ties like `[begin + 1]`
+// (BinaryExpression vs the row `begin`, `+1`) in favor of the other
+// interpretation; unambiguous matrices are unaffected.
+matrix-elem { expr-idx | binding-idx<'Assignment'> }
+MatrixRow[@dynamicPrecedence=-1] { matrix-elem ~gen-or-mat (spaceSep matrix-elem ~gen-or-mat)* }
 
 array {
-  ( ComprehensionExpression { '[' Generator<expr-idx> ']' }
+  ( ComprehensionExpression { '[' ArrayGenerator<expr-idx> ']' }
   | MatrixExpression { '[' MatrixRow (_t MatrixRow)* _t? ']' }
   | VectorExpression { '[' sep<',', (!vec (expr-idx | binding-idx<'Assignment'>))> ']' }
   )
 }
 
 
-DoClause[group=CompoundStatement]{ kw<'do'> Parameters { sep1<',', Identifier | TupleExpression | operation<expr>>? } _t block? end }
+DoClause[group=CompoundStatement]{
+  kw<'do'> Parameters { sep1<',', Identifier | TupleExpression<expr> | operation<expr>>? }
+  (_t block? end | end)
+}
 
-CallExpression {
-  (primary-expr (immediateDot '.')? | Operator)
-  immediateParen Arguments
+CallExpression<e> {
+  (primary-expr<e> (immediateDot '.')? | Operator)
+  immediateParen Arguments<e>
   DoClause?
 }
 
-macro-head { MacroIdentifier | [@name=FieldExpression]{ primary-expr immediateDot '.' MacroIdentifier } }
+macro-head<e> { MacroIdentifier | [@name=FieldExpression]{ primary-expr<e> immediateDot '.' MacroIdentifier } }
 
-ClosedMacrocallExpression[@name=MacrocallExpression] {
-  macro-head
+ClosedMacrocallExpression[@name=MacrocallExpression]<e> {
+  macro-head<e>
   ( immediateBracket array
-  | immediateBrace BraceExpression
-  | immediateParen Arguments
+  | immediateBrace BraceExpression<e>
+  | immediateParen Arguments<e>
   )
   DoClause?
 }
 
-OpenMacrocallExpression[@name=MacrocallExpression] {
-  macro-head
+OpenMacrocallExpression[@name=MacrocallExpression]<e> {
+  macro-head<e>
   MacroArguments { macro-arg[@dynamicPrecedence=-1] { (!macro top-level) }+ }?
 }
 
@@ -245,22 +294,22 @@ InterpExpression[@dynamicPrecedence=1] {
   '$' !quote
   ( Identifier
   | Operator
-  | BraceExpression
-  | ParenExpression
-  | TupleExpression
+  | BraceExpression<expr>
+  | ParenExpression<expr>
+  | TupleExpression<expr>
   | array
-  | ClosedMacrocallExpression
+  | ClosedMacrocallExpression<expr>
   // | OpenMacrocallExpression
   )
 }
 
 QuoteExpression[@dynamicPrecedence=1] {
   ':' !quote
-  ( immediateBrace BraceExpression
-  | immediateParen ParenExpression
-  | immediateParen TupleExpression
+  ( immediateBrace BraceExpression<expr>
+  | immediateParen ParenExpression<expr>
+  | immediateParen TupleExpression<expr>
   | immediateBracket array
-  | immediateAt ClosedMacrocallExpression
+  | immediateAt ClosedMacrocallExpression<expr>
   // | immediateAt OpenMacrocallExpression // TODO
   | immediateParen parens<SyntacticOperator>
   )
@@ -276,45 +325,45 @@ Symbol {
 
 // OPERATIONS
 
-operation<expr> {
-  ( SplatExpression { expr !colon '...' }
-  | UnaryExpression { (TildeOp | TypeComparisonOp | UnaryOp | UnaryPlusOp) !unary expr }
-  | [@name=UnaryExpression] { '::' !unary Type { expr } }
-  | BinaryExpression<expr>
+operation<e> {
+  ( SplatExpression { e !colon '...' }
+  | UnaryExpression { (TildeOp | TypeComparisonOp | UnaryOp | UnaryPlusOp) !unary e }
+  | [@name=UnaryExpression] { '::' !unary Type }
+  | BinaryExpression<e>
   )
 }
 
-BinaryExpression<expr> {
-  ( expr !where      kwid<'where'> !where Type { expr }
-  | expr !decl       '::' Type { expr }
-  | expr !power      PowerOp !power expr
-  | expr !bitshift   BitshiftOp !bitshift expr
-  | expr !rational   RationalOp !rational expr
-  | expr !times      TimesOp !times expr
-  | expr !plus       (PlusOp | UnaryPlusOp | Dollar { '$' }) !plus expr
-  | expr !colon      (EllipsisOp | Colon { ':' }) !colon expr
-  | expr !pipe-right PipeRightOp !pipe-right expr
-  | expr !pipe-left  PipeLeftOp !pipe-left expr
-  | expr !comparison (ComparisonOp | TypeComparisonOp | membership-operator) !comparison expr
-  | expr !lazy-and   LazyAndOp expr
-  | expr !lazy-or    LazyOrOp expr
-  | expr !arrow      ArrowOp !arrow expr
-  | expr !pair       PairOp !pair expr
+BinaryExpression<e> {
+  ( e !where      kwid<'where'> !where Type
+  | e !decl       '::' !decl Type
+  | e !power      PowerOp !power e
+  | e !bitshift   BitshiftOp !bitshift e
+  | e !rational   RationalOp !rational e
+  | e !times      TimesOp !times e
+  | e !plus       (PlusOp | UnaryPlusOp | Dollar { '$' }) !plus e
+  | e !colon      (EllipsisOp | Colon { ':' }) !colon e
+  | e !pipe-right PipeRightOp !pipe-right e
+  | e !pipe-left  PipeLeftOp !pipe-left e
+  | e !comparison (ComparisonOp | TypeComparisonOp | membership-operator) !comparison e
+  | e !lazy-and   LazyAndOp e
+  | e !lazy-or    LazyOrOp e
+  | e !arrow      ArrowOp !arrow e
+  | e !pair       PairOp !pair e
   )
 }
 
-ArrowFunctionExpression { (Identifier | TupleExpression) !afunc '->' !afunc (expr | binding<'Assignment'>) }
+ArrowFunctionExpression<e> { (Identifier | TupleExpression<e>) !afunc '->' !afunc (e | _binding<'Assignment', e>) }
 
 // JuxtapositionExpression is non-associative
 // TODO: Handle monomials like 3x^2 with the correct precedence
-JuxtapositionExpression {
-  ( (IntegerLiteral | FloatLiteral) ((!juxt immediateIdentifier primary-expr) | (!juxt immediateParen primary-expr))
-  | primary-expr (!juxt immediateIdentifier primary-expr)
+JuxtapositionExpression<e> {
+  ( (IntegerLiteral | FloatLiteral) ((!juxt immediateIdentifier primary-expr<e>) | (!juxt immediateParen primary-expr<e>))
+  | primary-expr<e> (!juxt immediateIdentifier primary-expr<e>)
   )
-  (!juxt immediateIdentifier primary-expr)*
+  (!juxt immediateIdentifier primary-expr<e>)*
 }
 
-TernaryExpression<expr> { expr !ternary '?' !ternary expr !ternary ':' !ternary expr }
+TernaryExpression<e> { e !ternary '?' !ternary e !ternary ':' !ternary e }
 
 
 Operator {
@@ -373,8 +422,8 @@ string {
   ns<delim, content, esc> { _s<delim, content | '$' | '\\' | [@name=EscapeSequence]{ '\\\\' | esc }> }
 
   // Commands support the same interpolations as InterpExpression.
-  str-interp { Identifier | parens<expr> }
-  cmd-interp { Identifier | BraceExpression | ParenExpression | TupleExpression | array }
+  str-interp { Identifier | ParenExpression<expr> | TupleExpression<expr> }
+  cmd-interp { Identifier | BraceExpression<expr> | ParenExpression<expr> | TupleExpression<expr> | array }
 
   // Strings can be single or triple quoted
   StringLiteral  { s<str1-quote, str1-content, str-interp> | s<str3-quote, str3-content, str-interp> }
@@ -403,6 +452,7 @@ string {
   immediateQuote,
   immediateIdentifier
 }
+@external tokens spaceSep from "./tokens.js" { spaceSep }
 @external tokens word from "./tokens.js" { word }
 @external tokens Identifier from "./tokens.js" { Identifier }
 
@@ -490,7 +540,7 @@ _t { newline | semicolon }
     )
   }
 
-  CharLiteral { "'" (![\\'] | EscapeSequence) "'" }
+  CharLiteral { "'" (![\\'] | EscapeSequence) "'" | "'''" }
 
   str1-quote[@name='"', group=QuotationMark]{ '"' }
   cmd1-quote[@name='`', group=QuotationMark]{ '`' }

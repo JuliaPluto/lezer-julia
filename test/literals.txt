@@ -127,6 +127,17 @@ Program(
 )
 
 
+# String literals - Assignment inside interpolation
+
+"a $(b = c)"
+
+==>
+
+Program(
+  StringLiteral(ParenExpression(Assignment(Identifier, AssignmentOp, Identifier))),
+)
+
+
 # String literals - Triple quote delimiters
 
 """

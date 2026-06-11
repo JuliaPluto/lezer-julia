@@ -72,6 +72,22 @@ Program(
 )
 
 
+# Type declarations - Precedence
+
+a::One + b::Two
+a + b::Two
+
+==>
+Program(
+  BinaryExpression(
+    BinaryExpression(Identifier, Type(Identifier)),
+    UnaryPlusOp,
+    BinaryExpression(Identifier, Type(Identifier))
+  ),
+  BinaryExpression(Identifier, UnaryPlusOp, BinaryExpression(Identifier, Type(Identifier)))
+)
+
+
 # Arrow function expressions
 
 x -> x ^ 2
