@@ -1,0 +1,88 @@
+# CLAUDE.md
+
+Lezer grammar for Julia, used by Pluto.jl. Lenient by design: it's an editor
+grammar, so over-accepting invalid Julia is fine; mis-parsing or erroring on
+valid Julia is not.
+
+## Build & test workflow
+
+- `npm run prepare` — full build via rollup, **~2 minutes**. Required before
+  `npm test` picks up grammar changes (tests run against `dist/`, which is
+  gitignored).
+- Fast iteration: `node_modules/.bin/lezer-generator src/julia.grammar -o /tmp/out.js`
+  (~30–60s) reports grammar conflicts without bundling. Always do this first
+  after grammar edits; only run the full build once it's conflict-free.
+- `npm test` itself is instant (~50ms). Test files are `test/*.txt` in
+  `@lezer/generator/test` fileTests format; anonymous tokens like `"["` are
+  omitted from expectations, named nodes like `begin`, `AssignmentOp(in)` appear.
+
+## Validation beyond unit tests (do this for any grammar change)
+
+`experiments/` contains a differential-testing harness (see its README):
+parse thousands of real `.jl` files from `~/.julia/packages` with the
+published parser and the new build, compare error-node counts per file.
+Setup: `npm pack @plutojl/lezer-julia@<old-version>`, unpack into
+`node_modules/old-lezer-julia`. **Demand 0 regressed files** before
+considering a change done. Files "changed with same error count" need
+spot-checking — GLR tie flips hide there. `experiments/find-regression.js`
+shows source context of new error nodes in a file.
+
+Don't use `julia -e` to cross-check semantics: startup takes minutes here.
+Issue threads + JuliaSyntax behavior knowledge are faster oracles.
+
+## Grammar architecture (non-obvious)
+
+- The expression layer is **parameterized on index context**:
+  `expression<e>` / `primary-expr<e>` / `CallExpression<e>` / `tuple<e>` etc.
+  are instantiated with `expr` (normal) or `expr-idx` (inside `[...]`, where
+  `begin`/`end` are index values at any depth — issue #15). Index context
+  propagates through calls/parens/tuples/braces/arrow bodies and **resets**
+  inside block bodies (compound statements, do-blocks), matching Julia.
+- If you add a rule reachable from `expression<e>` that mentions
+  `primary-expr<expr>` (or anything expr-instantiated), you will get mass
+  reduce/reduce conflicts in idx states. Parameterize the rule instead
+  (this is why `OpenMacrocallExpression<e>` and `macro-head<e>` are parametric).
+- `compound-statement-idx` duplicates `compound-statement` for bracket
+  context. The `~bgn` marker after `kw<'begin'>` (in both `expr-idx` and the
+  idx `BeginStatement`) is what lets GLR fork begin-as-index vs begin-block.
+- `MatrixRow` elements are separated by the zero-length external token
+  `spaceSep` (whitespace containing no newline). This is what makes `[f(x)]`
+  a call instead of the juxtaposition `f`,`(x)`. `MatrixRow` carries
+  `@dynamicPrecedence=-1` purely to break GLR ties toward non-matrix readings.
+
+## Hard-won gotchas
+
+- **External tokenizers that call `stack.canShift` MUST be `contextual: true`.**
+  Otherwise their token is cached per-position and shared across GLR
+  branches; a branch where the token is invalid silently dies. This bug hid
+  for years in the `newline` tokenizer and only surfaced once brackets could
+  contain begin-blocks.
+- Even with contextual tokenizers, a GLR fork can only survive a newline if
+  **both branches can shift it**. That's why `begin`/`quote`/`try`/`else`/
+  `finally` have explicit `newline?` after the keyword. Use `newline?`, not
+  `_t?`: `_t` includes the `semicolon` token (`';'+`) which **overlaps the
+  `';'` literal** in ParenExpression/tuple separators → generator error
+  "Overlapping tokens semicolon and ';'". (Hence `begin; 1; end` still
+  doesn't parse — known pre-existing limitation.)
+- **`@dynamicPrecedence` is a global footgun.** Putting it on
+  `CallExpression` to win the matrix-juxtaposition ambiguity broke `:(x)`
+  and `$(x)` (they fork against call-with-Operator-head). Prefer making the
+  losing fork *impossible* (e.g. spaceSep) over dp; if you must use dp,
+  run the full corpus diff.
+- GLR ties (equal dp, both branches errorless) are resolved **arbitrarily
+  and context-dependently** — the same snippet can parse differently
+  depending on *following* lines. If a corpus file changes tree without
+  changing error count, suspect a tie and break it deterministically.
+- Token selection is parse-state-dependent: `'''` as CharLiteral and `x'''`
+  as triple adjoint coexist without conflict because the CharLiteral token
+  isn't valid in post-expression states.
+- `[a -1]` vs `[a - 1]` whitespace-sensitivity (Julia hvcat) is NOT modeled;
+  both parse as BinaryExpression. Same class: `[a ~b]` parses as binding.
+  Accepted leniency.
+
+## Project conventions
+
+- `memory/MEMORY.md` (untracked) has session notes overlapping this file.
+- Maintainer (fonsp) handles version bumps and `make release`; don't bump
+  `package.json` in PRs unless asked.
+- PRs: branch off `main`, `gh pr create --draft`. dist/ is never committed.
