@@ -47,8 +47,15 @@ Program(
 0x0123456789_abcdef_ABCDEF.p-1
 0x.0123456789_abcdef_ABCDEFp1
 
+0x1.8P3
+0x0.0000000000000P+0
+0x.aP-1064
+
 ==>
 Program(
+  FloatLiteral,
+  FloatLiteral,
+  FloatLiteral,
   FloatLiteral,
   FloatLiteral,
   FloatLiteral,

@@ -526,7 +526,7 @@ _t { newline | semicolon }
   dec { $[0-9] }
   hex { $[0-9A-Fa-f] }
   exp { $[Eef] $[+-]? dec+ }
-  hex-exp { 'p' $[+-]? dec+ }
+  hex-exp { $[pP] $[+-]? dec+ }
 
   FloatLiteral {
     numeral<dec> ('.' numeral<dec>? exp? | exp)
