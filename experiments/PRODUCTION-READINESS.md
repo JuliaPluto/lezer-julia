@@ -75,8 +75,68 @@ demanding **0 regressions** before merge.
 
 Landed CRLF, the `public` soft-keyword, `const` struct fields, and a fourth gap
 found during this analysis — **uppercase-`P` hex floats** (`0x1.8P3`; `hex-exp`
-matched only lowercase `p`). Combined: **256 corpus files improved**, total
-error nodes **85,192 → 37,479 (−56%)**, file clean-parse rate 92.9% → 93.4%,
-with 1 accepted regression (a non-interactive `MLStyle` benchmark hitting a
-pre-existing `$$`-interpolation weakness). Remaining gaps are tracked as issues
-#51–#57.
+matched only lowercase `p`). Remaining gaps are tracked as issues #51–#57.
+
+### Completeness (40,402-file corpus)
+
+| Metric | Pre-PR baseline | After PR #49 |
+|--------|-----------------|--------------|
+| Files parsing clean (zero error nodes) | 92.9% (37,518) | **93.4% (37,751)** |
+| Base + stdlib clean | — | **85.9% (756 / 880)** |
+| Total error nodes | 85,192 | **37,479 (−56%)** |
+| Files improved vs baseline | — | **256** |
+| Regressions | — | 1 (accepted, pathological `$$` benchmark) |
+
+Hard parse exceptions: 0 (both builds).
+
+### Reproducing the table
+
+Two committed scripts over a corpus, comparing this branch's `dist/` against a
+build of the baseline ref. Runtime is a few minutes per corpus pass.
+
+**1. Build the corpus list** (paths are for macOS `juliaup`; adjust for your
+Julia install — `base/` + `stdlib/` live under `<julia>/share/julia/`):
+
+```sh
+J='~/.julia/juliaup'   # find the active version's base + stdlib
+find $J -path '*/julia-1.12*/share/julia/base/*'   -name '*.jl' >  /tmp/corpus-base.txt
+find $J -path '*/julia-1.12*/share/julia/stdlib/*' -name '*.jl' >> /tmp/corpus-base.txt
+cat /tmp/corpus-base.txt              >  /tmp/corpus-all.txt
+find ~/.julia/packages -name '*.jl'   >> /tmp/corpus-all.txt
+```
+
+**2. Build "after" (this branch) and "before" (the baseline ref):**
+
+```sh
+npm run prepare                       # "after" → dist/ (~2 min)
+
+BASE=origin/main                      # the commit this branch forked from
+mkdir -p tmp-main-build
+git show $BASE:src/julia.grammar > tmp-main-build/julia.grammar
+git show $BASE:src/highlight.js  > tmp-main-build/highlight.js
+git show $BASE:src/tokens.js \
+  | sed 's|"./julia.grammar.terms"|"./julia.grammar.terms.js"|' > tmp-main-build/tokens.js
+node_modules/.bin/lezer-generator tmp-main-build/julia.grammar -o tmp-main-build/julia.grammar.js
+```
+
+**3. Generate the numbers:**
+
+```sh
+node experiments/diff-vs-main.mjs   /tmp/corpus-all.txt                            # before-vs-after diff
+node experiments/error-summary.mjs  /tmp/corpus-all.txt                            # "after" clean rate
+node experiments/error-summary.mjs  /tmp/corpus-all.txt tmp-main-build/julia.grammar.js  # "before" clean rate
+node experiments/error-summary.mjs  /tmp/corpus-base.txt                           # Base+stdlib clean rate
+```
+
+**Row → source mapping:**
+
+| Table row | Command | Output line |
+|-----------|---------|-------------|
+| Files parsing clean | `error-summary.mjs <corpus> [parser]` | `files with error nodes: N (P%)` → clean = `processed − N`, `(100 − P)%` |
+| Base + stdlib clean | `error-summary.mjs /tmp/corpus-base.txt` | same line |
+| Total error nodes | `diff-vs-main.mjs` | `total error nodes: old=… new=…` |
+| Files improved | `diff-vs-main.mjs` | `different trees, fewer errors (improved): …` |
+| Regressions | `diff-vs-main.mjs` | `different trees, MORE errors (regressed): …` |
+
+`error-summary.mjs` takes an optional second arg (a parser build, relative to
+the repo root) so the same script measures the baseline build without a rebuild.

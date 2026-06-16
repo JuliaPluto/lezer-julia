@@ -3,9 +3,16 @@
 // useful confound to subtract before reading `find-gaps.mjs` output). Also
 // lists the worst files so you can drill in with `find-regression.js`.
 //
-// Usage: node experiments/error-summary.mjs /tmp/corpus.txt
+// Usage: node experiments/error-summary.mjs <corpus.txt> [parser.js]
+//   parser.js (optional, relative to the repo root) selects which build to
+//   measure; defaults to dist/index.js. Point it at a baseline standalone
+//   build (e.g. tmp-main-build/julia.grammar.js, see diff-vs-main.mjs) to get
+//   the "before" numbers without rebuilding dist/.
 import { readFileSync } from "node:fs";
-const { parser } = await import("../dist/index.js");
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+const parserPath = process.argv[3] || "dist/index.js";
+const { parser } = await import(pathToFileURL(resolve(parserPath)).href);
 const files = readFileSync(process.argv[2], "utf8").trim().split("\n");
 
 function errs(code) { let n = 0; parser.parse(code).iterate({ enter(x) { if (x.type.isError) n++; } }); return n; }
