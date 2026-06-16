@@ -66,26 +66,11 @@ Issue threads + JuliaSyntax behavior knowledge are faster oracles.
 
 ## Hard-won gotchas
 
-- **The `newline` external tokenizer must treat `\r` as a line break.** Julia
-  ends lines with `\n`, `\r`, or `\r\n`; the tokenizer's newline-consume loop
-  accepts `\r`/`\n` (and its trailing-whitespace skip is space/tab only, so
-  `\r` is consumed as part of the newline, not skipped). Otherwise a CRLF file
-  produces no newline token and every statement boundary + matrix/vcat row past
-  the first errors (`spaceSep`'s "is this a row separator?" check also tests
-  `\r`). Found by the 40k-file corpus sweep; mostly-LF corpora hide it.
 - **Soft keywords use `kwid<>` (`@extend`), hard keywords use `kw<>`
   (`@specialize`).** `kw<'public'>` made `public` unusable as an identifier
   (`x = public`, `f(public)`, `@public`, `macro public`); `kwid<'public'>`
   (like `as`/`outer`/`in`) keeps the `public x, y` statement working while
   letting `public` be an ordinary identifier elsewhere.
-- **`const` uses `top-level`, not `OpenAssignment`** (matching `global`/`local`)
-  so a bare `const x::T` field declaration parses (Julia 1.8+ const struct
-  fields, used throughout Base). A narrower rule is impossible: `const` is
-  reachable inside `expr` (via `simple-statement`), so any new rule reducing
-  from a shared expr-nonterminal is a *fatal* reduce/reduce conflict. The cost:
-  `const $$sym = $$scall` (double-interp inside a quote) flips to the bare-decl
-  reading — a pre-existing `$$`-as-juxtaposition weakness surfacing, not a const
-  bug (1 corpus file, a non-interactive MLStyle benchmark).
 - **External tokenizers that call `stack.canShift` MUST be `contextual: true`.**
   Otherwise their token is cached per-position and shared across GLR
   branches; a branch where the token is invalid silently dies. This bug hid
