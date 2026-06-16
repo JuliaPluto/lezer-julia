@@ -70,3 +70,13 @@ Items #4–#9 are a metaprogramming long tail.
 
 Every grammar change must be validated with the `experiments/` corpus diff
 demanding **0 regressions** before merge.
+
+## Outcome (PR #49)
+
+Landed CRLF, the `public` soft-keyword, `const` struct fields, and a fourth gap
+found during this analysis — **uppercase-`P` hex floats** (`0x1.8P3`; `hex-exp`
+matched only lowercase `p`). Combined: **256 corpus files improved**, total
+error nodes **85,192 → 37,479 (−56%)**, file clean-parse rate 92.9% → 93.4%,
+with 1 accepted regression (a non-interactive `MLStyle` benchmark hitting a
+pre-existing `$$`-interpolation weakness). Remaining gaps are tracked as issues
+#51–#57.
