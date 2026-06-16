@@ -4,6 +4,7 @@ import * as terms from "./julia.grammar.terms"; // Not a real file. "linked" by 
 // UNICODE CODEPOINTS
 
 const CHAR_NEWLINE = "\n".codePointAt(0);
+const CHAR_CR = "\r".codePointAt(0);
 
 const CHAR_EXCLAMATION = "!".codePointAt(0);
 const CHAR_EQUALS = "=".codePointAt(0);
@@ -249,10 +250,15 @@ export const newline = new ExternalTokenizer(
     while (c === 0x20 /* space */ || c === 0x09 /* tab */) {
       c = input.peek(++offset);
     }
-    // Consume one or more newline characters.
+    // Consume one or more newline characters. Julia treats `\n`, `\r` and
+    // `\r\n` all as line breaks, so accept carriage returns too — otherwise a
+    // CRLF file produces no newline token and every statement boundary (and
+    // every matrix/vcat row) past the first errors.
     const nlStart = offset;
-    while (input.peek(offset) === CHAR_NEWLINE) {
+    let nl = input.peek(offset);
+    while (nl === CHAR_NEWLINE || nl === CHAR_CR) {
       offset += 1;
+      nl = input.peek(offset);
     }
     // Only produce the token if we found at least one newline and the
     // current parser state accepts it as a statement separator.
@@ -369,7 +375,7 @@ export const spaceSep = new ExternalTokenizer(
     let c = input.peek(offset);
     if (!isWhitespace(c)) return;
     while (isWhitespace(c)) {
-      if (c === CHAR_NEWLINE) return;
+      if (c === CHAR_NEWLINE || c === CHAR_CR) return;
       c = input.peek(--offset);
     }
     if (stack.canShift(terms.spaceSep)) {

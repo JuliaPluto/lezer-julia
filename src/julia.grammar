@@ -115,11 +115,11 @@ simple-statement {
   ( BreakStatement { kw<'break'> }
   | ContinueStatement { kw<'continue'> }
   | ReturnStatement { kw<'return'> (!simple top-level)? }
-  | ConstStatement  { kw<'const'>  !simple OpenAssignment }
+  | ConstStatement  { kw<'const'>  !simple top-level }
   | GlobalStatement { kw<'global'> !simple top-level }
   | LocalStatement  { kw<'local'>  !simple top-level }
   | ExportStatement { kw<'export'> !simple sep1<(!tup ','), exportable> }
-  | PublicStatement { kw<'public'> !simple sep1<(!tup ','), exportable> }
+  | PublicStatement { kwid<'public'> !simple sep1<(!tup ','), exportable> }
   | ImportStatement { kw<'import'> !simple (import-list | SelectedImport) }
   | UsingStatement { kw<'using'> !simple (import-list | SelectedImport) }
   )
