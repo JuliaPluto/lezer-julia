@@ -44,6 +44,26 @@ node experiments/find-regression.js path/to/file.jl
 node experiments/perf.mjs /tmp/julia-corpus-big.txt
 ```
 
+## find-gaps.mjs, error-summary.mjs
+
+Find *valid Julia the parser errors on* (as opposed to regressions vs a previous
+build). Real package code is valid Julia, so every error node on a corpus file
+is a candidate grammar gap.
+
+```
+# Build a corpus (packages + optionally Base/stdlib):
+find ~/.julia/packages -name '*.jl' > /tmp/corpus.txt
+
+# Cluster error lines, ranked by how many distinct packages each spans
+# (many packages = systematic gap; one package = DSL/data noise):
+node experiments/find-gaps.mjs /tmp/corpus.txt
+
+# Corpus error totals, CRLF attribution, and the worst files:
+node experiments/error-summary.mjs /tmp/corpus.txt
+```
+
+See `PRODUCTION-READINESS.md` for a writeup of a full run.
+
 ## diff-vs-main.mjs
 
 Same as diff-corpus.js, but compares against a standalone build of the

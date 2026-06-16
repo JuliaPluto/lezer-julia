@@ -544,6 +544,48 @@ Program(
   )
 )
 
+
+# Const statements - typed const and const struct fields (Julia 1.8+)
+
+const x::Int = 1
+
+mutable struct Event
+    const notify::Int
+    const autoreset
+    set::Bool
+end
+
+==>
+Program(
+  ConstStatement(const, Assignment(BinaryExpression(Identifier, "::", Type(Identifier)), AssignmentOp, IntegerLiteral)),
+  StructDefinition(
+    mutable, struct, TypeHead(Identifier),
+    ConstStatement(const, BinaryExpression(Identifier, "::", Type(Identifier))),
+    ConstStatement(const, Identifier),
+    BinaryExpression(Identifier, "::", Type(Identifier)),
+    end
+  )
+)
+
+
+# Public used as an identifier (soft keyword)
+
+public a, b
+public
+x = public
+f(public)
+@public x
+
+==>
+Program(
+  PublicStatement(public, Identifier, Identifier),
+  Identifier,
+  Assignment(Identifier, AssignmentOp, Identifier),
+  CallExpression(Identifier, Arguments(Identifier)),
+  MacrocallExpression(MacroIdentifier(Identifier), MacroArguments(Identifier))
+)
+
+
 # Local statements
 
 local x

@@ -66,6 +66,11 @@ Issue threads + JuliaSyntax behavior knowledge are faster oracles.
 
 ## Hard-won gotchas
 
+- **Soft keywords use `kwid<>` (`@extend`), hard keywords use `kw<>`
+  (`@specialize`).** `kw<'public'>` made `public` unusable as an identifier
+  (`x = public`, `f(public)`, `@public`, `macro public`); `kwid<'public'>`
+  (like `as`/`outer`/`in`) keeps the `public x, y` statement working while
+  letting `public` be an ordinary identifier elsewhere.
 - **External tokenizers that call `stack.canShift` MUST be `contextual: true`.**
   Otherwise their token is cached per-position and shared across GLR
   branches; a branch where the token is invalid silently dies. This bug hid
