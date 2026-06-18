@@ -7,6 +7,8 @@ The grammar was initially based on [tree-sitter-julia](https://github.com/tree-s
 
 The code is licensed under an MIT license.
 
+## Demo site
+See this parser in action on our demo page: https://juliapluto.github.io/lang-julia-demo/
 
 ## Contributing
 
