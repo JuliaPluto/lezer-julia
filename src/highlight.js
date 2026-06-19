@@ -11,14 +11,22 @@ export const juliaHighlighting = styleTags({
   "NsStringLiteral/Identifier": t.macroName,
   "NsCommandLiteral/Identifier": t.macroName,
   "Symbol!": t.atom,
-  "begin end": t.constant(t.variableName), // begin/end indices
+  "begin end": t.standard(t.constant(t.variableName)), // begin/end used as array index
+  
+  // Functions
+  "FunctionDefinition/Signature/CallExpression/Identifier         MacroDefinition/Signature/CallExpression/Identifier             Assignment/CallExpression/Identifier": t.function(
+    t.definition(t.variableName),
+  ),
+  "CallExpression/VariableName": t.function(t.variableName),
 
+  // Literals
   CharLiteral: t.character,
   EscapeSequence: t.escape,
   IntegerLiteral: t.integer,
   FloatLiteral: t.float,
   BoolLiteral: t.bool,
 
+  // Keywords
   "BeginStatement/begin BeginStatement/end": t.keyword,
   "quote QuoteStatement/end": t.keyword,
   "let LetStatement/end": t.keyword,
@@ -34,7 +42,8 @@ export const juliaHighlighting = styleTags({
   "function FunctionDefinition/end": t.definitionKeyword,
   "do DoClause/end": t.definitionKeyword,
   "macro MacroDefinition/end": t.definitionKeyword,
-  "const global local": t.definitionKeyword,
+  "global local": t.definitionKeyword,
+  const: t.constant(t.definitionKeyword),
 
   "module baremodule ModuleDefinition/end": t.moduleKeyword,
   "export public import using as": t.moduleKeyword,
@@ -69,11 +78,12 @@ export const juliaHighlighting = styleTags({
   "PlusOp Dollar": t.arithmeticOperator,
   "EllipsisOp Colon": t.operator,
   "PipeLeftOp PipeRightOp": t.operator,
-  "ComparisonOp TypeComparisonOp": t.compareOperator,
+  ComparisonOp: t.compareOperator,
+  TypeComparisonOp: t.typeOperator,
   "LazyAndOp LazyOrOp": t.logicOperator,
   ArrowOp: t.operator,
   'TernaryExpression/"?" TernaryExpression/":"': t.controlOperator,
-  PairOp: t.operator,
+  PairOp: t.derefOperator,
   AssignmentOp: t.definitionOperator,
   UpdateOp: t.updateOperator,
 
@@ -83,4 +93,4 @@ export const juliaHighlighting = styleTags({
   "( )": t.paren,
   "[ ]": t.squareBracket,
   "{ }": t.brace,
-});
+})
