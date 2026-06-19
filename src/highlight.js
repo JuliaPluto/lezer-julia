@@ -14,8 +14,11 @@ export const juliaHighlighting = styleTags({
   "begin end": t.standard(t.constant(t.variableName)), // begin/end used as array index
   
   // Functions
-  "FunctionDefinition/Signature/CallExpression/Identifier         MacroDefinition/Signature/CallExpression/Identifier             Assignment/CallExpression/Identifier": t.function(
+  "FunctionDefinition/Signature/CallExpression/Identifier             Assignment/CallExpression/Identifier": t.function(
     t.definition(t.variableName),
+  ),
+  "MacroDefinition/Signature/CallExpression/Identifier": t.function(
+    t.definition(t.macroName),
   ),
   "CallExpression/VariableName": t.function(t.variableName),
 
