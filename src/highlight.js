@@ -76,6 +76,7 @@ export const juliaHighlighting = styleTags({
   PairOp: t.operator,
   AssignmentOp: t.definitionOperator,
   UpdateOp: t.updateOperator,
+  SubTypeOp: t.typeOperator,
 
   "->": t.definitionOperator,
   ". ... ::": t.punctuation,

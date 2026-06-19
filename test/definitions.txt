@@ -68,7 +68,7 @@ struct MyInt; field::Int end
 ==>
 Program(
   StructDefinition(struct, TypeHead(Identifier), end),
-  StructDefinition(struct, TypeHead(Identifier), BinaryExpression(Identifier, Type(Identifier)), end),
+  StructDefinition(struct, TypeHead(Identifier), BinaryExpression(Identifier, SubTypeOp, Type(Identifier)), end),
 )
 
 
@@ -85,7 +85,7 @@ Program(
     mutable, struct,
     TypeHead(Identifier),
     Identifier,
-    BinaryExpression(Identifier, Type(Identifier)),
+    BinaryExpression(Identifier, SubTypeOp, Type(Identifier)),
     end
   ),
 )
@@ -103,8 +103,8 @@ Program(
   StructDefinition(
     struct,
     TypeHead(ParametrizedExpression(Identifier, BraceExpression(Identifier))),
-    BinaryExpression(Identifier, Type(Identifier)),
-    BinaryExpression(Identifier, Type(Identifier)),
+    BinaryExpression(Identifier, SubTypeOp, Type(Identifier)),
+    BinaryExpression(Identifier, SubTypeOp, Type(Identifier)),
     end
   ),
 )
@@ -128,8 +128,8 @@ Program(
         Identifier
       )
     ),
-    BinaryExpression(Identifier, Type(Identifier)),
-    BinaryExpression(Identifier, Type(Identifier)),
+    BinaryExpression(Identifier, SubTypeOp, Type(Identifier)),
+    BinaryExpression(Identifier, SubTypeOp, Type(Identifier)),
     end
   ),
 )
@@ -146,7 +146,7 @@ Program(
   StructDefinition(
     mutable, struct,
     TypeHead(BinaryExpression(Identifier, TypeComparisonOp, Identifier)),
-    BinaryExpression(Identifier, Type(ParametrizedExpression(Identifier, BraceExpression(Identifier)))),
+    BinaryExpression(Identifier, SubTypeOp, Type(ParametrizedExpression(Identifier, BraceExpression(Identifier)))),
     end
   ),
 )
@@ -175,7 +175,7 @@ Program(
     Signature(
       CallExpression(
         FieldExpression(Identifier, Field(Identifier)),
-        Arguments(BinaryExpression(Identifier, Type(Identifier)))
+        Arguments(BinaryExpression(Identifier, SubTypeOp, Type(Identifier)))
       )
     ),
     ReturnStatement(return, IntegerLiteral),
@@ -215,7 +215,7 @@ end
 Program(
   FunctionDefinition(
     function,
-    Signature(CallExpression(ParenExpression(BinaryExpression(Identifier, Type(Identifier))), Arguments)),
+    Signature(CallExpression(ParenExpression(BinaryExpression(Identifier, SubTypeOp, Type(Identifier))), Arguments)),
     end,
   )
 )
@@ -293,7 +293,7 @@ Program(
       CallExpression(Identifier, Arguments),
     ),
     UnaryExpression(
-      Type(Identifier),
+      SubTypeOp, Type(Identifier),
     ),
     end,
   ),
@@ -303,7 +303,7 @@ Program(
         CallExpression(Identifier, Arguments),
     ),
     UnaryExpression(
-      Type(Identifier),
+      SubTypeOp, Type(Identifier),
     ),
     Identifier,
     end,
