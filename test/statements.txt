@@ -557,12 +557,12 @@ end
 
 ==>
 Program(
-  ConstStatement(const, Assignment(BinaryExpression(Identifier, "::", Type(Identifier)), AssignmentOp, IntegerLiteral)),
+  ConstStatement(const, Assignment(BinaryExpression(Identifier, SubTypeOp, Type(Identifier)), AssignmentOp, IntegerLiteral)),
   StructDefinition(
     mutable, struct, TypeHead(Identifier),
-    ConstStatement(const, BinaryExpression(Identifier, "::", Type(Identifier))),
+    ConstStatement(const, BinaryExpression(Identifier, SubTypeOp, Type(Identifier))),
     ConstStatement(const, Identifier),
-    BinaryExpression(Identifier, "::", Type(Identifier)),
+    BinaryExpression(Identifier, SubTypeOp, Type(Identifier)),
     end
   )
 )

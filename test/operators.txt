@@ -187,9 +187,9 @@ Program(
 ==>
 Program(
   QuoteExpression(ParenExpression(Operator(Colon))),
-  QuoteExpression(ParenExpression(Operator)),
-  QuoteExpression(ParenExpression(UnaryExpression(Type(Operator(Colon))))),
-  QuoteExpression(ParenExpression(UnaryExpression(Type(UnaryExpression(Type(Operator(Colon))))))),
+  QuoteExpression(ParenExpression(Operator(SubTypeOp))),
+  QuoteExpression(ParenExpression(UnaryExpression(SubTypeOp, Type(Operator(Colon))))),
+  QuoteExpression(ParenExpression(UnaryExpression(SubTypeOp, Type(UnaryExpression(SubTypeOp, Type(Operator(Colon))))))),
 )
 
 

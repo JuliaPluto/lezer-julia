@@ -365,7 +365,7 @@ Program(
     Arguments(Identifier),
     DoClause(
       do,
-      Parameters(BinaryExpression(Identifier, Type(Identifier))),
+      Parameters(BinaryExpression(Identifier, SubTypeOp, Type(Identifier))),
       end
     )
   )
@@ -386,6 +386,7 @@ Program(
       Parameters(
         BinaryExpression(
           TupleExpression(Identifier, Identifier),
+          SubTypeOp,
           Type(Identifier),
         )
       ),

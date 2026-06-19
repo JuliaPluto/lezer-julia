@@ -42,7 +42,8 @@ Program(
   )
   Assignment(
     BinaryExpression(
-      CallExpression(Identifier, Arguments(BinaryExpression(Identifier, Type(Identifier)))),
+      CallExpression(Identifier, Arguments(BinaryExpression(Identifier, SubTypeOp, Type(Identifier)))),
+      SubTypeOp,
       Type(
         BinaryExpression(
           Identifier,
@@ -64,9 +65,10 @@ x::Vector{T} where T
 
 ==>
 Program(
-  BinaryExpression(Identifier, Type(Identifier)),
+  BinaryExpression(Identifier, SubTypeOp, Type(Identifier)),
   BinaryExpression(
     Identifier,
+    SubTypeOp,
     Type(BinaryExpression(ParametrizedExpression(Identifier, BraceExpression(Identifier)), where, Type(Identifier)))
   )
 )
@@ -80,11 +82,11 @@ a + b::Two
 ==>
 Program(
   BinaryExpression(
-    BinaryExpression(Identifier, Type(Identifier)),
+    BinaryExpression(Identifier, SubTypeOp, Type(Identifier)),
     UnaryPlusOp,
-    BinaryExpression(Identifier, Type(Identifier))
+    BinaryExpression(Identifier, SubTypeOp, Type(Identifier))
   ),
-  BinaryExpression(Identifier, UnaryPlusOp, BinaryExpression(Identifier, Type(Identifier)))
+  BinaryExpression(Identifier, UnaryPlusOp, BinaryExpression(Identifier, SubTypeOp, Type(Identifier)))
 )
 
 
