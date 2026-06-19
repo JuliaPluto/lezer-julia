@@ -588,7 +588,7 @@ _t { newline | semicolon }
   '(' ')' '[' ']' '{' '}'
 }
 
-// @external propSource juliaHighlighting from "./highlight.js"
+@external propSource juliaHighlighting from "./highlight.js"
 
 @detectDelim
 
