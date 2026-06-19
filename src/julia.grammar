@@ -341,14 +341,14 @@ Symbol {
 operation<e> {
   ( SplatExpression { e !colon '...' }
   | UnaryExpression { (TildeOp | TypeComparisonOp | UnaryOp | UnaryPlusOp) !unary e }
-  | [@name=UnaryExpression] { '::' !unary Type }
+  | [@name=UnaryExpression] { SubTypeOp !unary Type }
   | BinaryExpression<e>
   )
 }
 
 BinaryExpression<e> {
   ( e !where      kwid<'where'> !where Type
-  | e !decl       '::' !decl Type
+  | e !decl       SubTypeOp !decl Type
   | e !power      PowerOp !power e
   | e !bitshift   BitshiftOp !bitshift e
   | e !rational   RationalOp !rational e
@@ -408,7 +408,7 @@ membership-operator { kwid<'in'> | kwid<'isa'> }
 // Operators that cannot be used as identifiers
 SyntacticOperator[@name=Operator] {
   ( '.'
-  | '::'
+  | SubTypeOp
   | '...'
   | LazyAndOp
   | LazyOrOp
@@ -511,7 +511,7 @@ _t { newline | semicolon }
 
   // Other syntactic operators
   '.'
-  '::'
+  SubTypeOp { '::' }
   '...'
   '?'
   ':'
