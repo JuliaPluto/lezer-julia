@@ -1,4 +1,4 @@
-# lezer-julia
+# `@plutojl/lezer-julia` [![NPM version](https://img.shields.io/npm/v/@plutojl/lezer-julia.svg)](https://www.npmjs.org/package/@plutojl/lezer-julia)
 
 This is a [Julia](https://julialang.org) grammar for the
 [lezer](https://lezer.codemirror.net) parser system.
